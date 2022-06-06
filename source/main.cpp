@@ -2,26 +2,26 @@
 #include <random>
 #include <vector>
 #include <numeric>
+#include <../include/networklib.h>
 using namespace std;
 
 void getUniformDegreeSequence(vector<int> &sequence, int a, int b){
     int n = sequence.size();
-    //cout << n << endl;
+
     random_device rd;
     mt19937 gen(rd());
     uniform_int_distribution<> distrib(a, b);
 
     int sum = 1;
-    while (sum % 2 != 0){
+    while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even
         for (int i=0; i<n; i++){
             sequence[i] = distrib(gen);
         }
         sum = accumulate(sequence.begin(), sequence.end(), 0);
-        //cout << sum << endl;
     }
 }
 
-void matchStubs(vector<vector<int>> &network, vector<int> &sequence){
+void matchStubs(vector<vector<int>> &network, vector<int> sequence){
     int n = sequence.size();
 
     random_device rd;
@@ -30,7 +30,7 @@ void matchStubs(vector<vector<int>> &network, vector<int> &sequence){
 
     for(int i=0; i<n; i++){
         while(sequence[i] > 0){
-            //chose at random another node
+            //chose another (valid) node at random
             int node = -1;
             while(true){
                 node = distrib(gen);
@@ -57,36 +57,37 @@ void matchStubs(vector<vector<int>> &network, vector<int> &sequence){
     }
 }
 
+void printNetwork(vector<vector<int>> network){
+    int n = network.size();
+    for(int i=0; i<n; i++){
+        cout << "node " << i << " is connected to: ";
+        for(auto j: network[i])  cout << j << ' ';
+        cout << endl;
+    }
+}
+
 int main(){
     int n = 4; // number of nodes
 
     //generate degree sequence
     vector<int> sequence (n);
 
-    getUniformDegreeSequence(sequence, 1, );
+    getUniformDegreeSequence(sequence, 1, 4);
+    for(int i=0; i<n; i++){
+        cout << sequence[i] << ' ';
+    }
+    cout << endl;
 
     int sum = accumulate(sequence.begin(), sequence.end(), 0);
     cout << "the sum of elements is: " << sum << endl;
 
-    for(int i=0; i<n; i++){
-        cout << sequence[i] << ' ';
-    }
-    cout << endl << endl;
     //match nodes
     vector<vector<int>> network (n);
 
     matchStubs(network, sequence);
 
-    for(int i=0; i<n; i++){
-        cout << "node " << i << " is connected to: ";
-        for(auto j: network[i])  cout << j << ' ';
-        cout << endl;
-    }
+    printNetwork(network);
 
-    for(int i=0; i<n; i++){
-        cout << sequence[i] << ' ';
-    }
-    cout << endl << endl;
-
-    cout << endl << "Hello World" << endl;
+    Network net = Network(3);
+    cout << "all done" << endl;
 }
