@@ -32,3 +32,10 @@
 *.app
 .vscode/c_cpp_properties.json
 .vscode/tasks.json
+.vscode/settings.json
+.vscode/targets.log
+.vscode/dryrun.log
+.vscode/configurationCache.log
+
+#Folders
+build/
