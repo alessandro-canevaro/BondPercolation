@@ -2,14 +2,15 @@
 #include <random>
 #include <vector>
 #include <numeric>
+#include <algorithm>
 #include <../include/networklib.h>
 
 using namespace std;
 
 Network::Network(int n){
     nodes = n; // number of nodes
-    vector<int> sequence (nodes);
-    vector<vector<int>> network (nodes);
+    vector<int> sequence;
+    vector<vector<int>> network;
 }
 
 void Network::getUniformDegreeSequence(int a, int b){
@@ -92,6 +93,71 @@ void Network::printNetwork(){
     for(int i=0; i<nodes; i++){
         cout << "node " << i << " is connected to: ";
         for(auto j: network[i])  cout << j << ' ';
+        cout << endl;
+    }
+}
+
+void Network::nodePercolation(){
+    random_device rd;
+    mt19937 gen(rd());
+
+    vector<int> node_order;
+    for(int i=0; i<nodes; i++){
+        node_order.push_back(i);
+    }
+    shuffle(node_order.begin(), node_order.end(), gen);
+
+    for (int j=0; j<nodes; j++){
+        cout << node_order[j] << ' ';
+    }
+    cout << endl;
+
+    int cluster_count = 0;
+    int r = 1;
+    vector<vector<int>> clusters;
+    for(int n: node_order){
+        cout << "r: " << r << " considering node: " << n << endl;
+        for(int i=0; i<clusters.size(); i++){
+            cout << "cluster " << i << " contains nodes: ";
+            for(auto j: clusters[i])  cout << j << ' ';
+            cout << endl;
+        }
+        vector<int> merge;
+        for(int e: network[n]){
+            cout << "considering edge to node: " << e << endl;
+            for(int cls=0; cls<clusters.size(); cls++){
+                auto found = find(begin(clusters[cls]), end(clusters[cls]), e);
+                if(found != end(clusters[cls])){
+                    cout << "the node was found in cluster with label: " << cls << endl;
+                    if(find(merge.begin(), merge.end(), cls) != merge.end()){
+                        cout << "element already in merge" << endl;
+                    }
+                    else{
+                        merge.push_back(cls);
+                    }
+                    break;
+                }
+            }
+        }
+
+        vector<int> new_cls{n};
+        clusters.push_back(new_cls);
+        cluster_count++;
+        cout << "node: " << n << " is added in a new cluster. total: " << cluster_count << endl;
+        sort(merge.begin(), merge.end(), greater<int>());
+        for(int cls: merge){
+            cout << "cluster " << cls << " inserted into " << clusters.size()-1 << endl;
+            clusters[clusters.size()-1].insert(clusters[clusters.size()-1].end(), clusters[cls].begin(), clusters[cls].end());
+            clusters.erase(clusters.begin() + cls);
+            cluster_count--;
+        }
+        cout << "total clusters: " << cluster_count << endl;
+        r++;
+    }
+    cout << endl << "END" << endl;
+    for(int i=0; i<clusters.size(); i++){
+        cout << "cluster " << i << " contains nodes: ";
+        for(auto j: clusters[i])  cout << j << ' ';
         cout << endl;
     }
 }
