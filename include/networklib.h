@@ -12,6 +12,8 @@ class Network{
 
         void printNetwork();
 
+        void nodePercolation();
+
 
     protected:
         int nodes;

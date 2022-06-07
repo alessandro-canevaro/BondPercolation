@@ -14,11 +14,17 @@ int main(){
     net.matchStubs();
     net.printNetwork();
 
+    cout << endl << "Percolation: " << endl;
+    net.nodePercolation();
+    /*
     cout << endl << "Binomial degree distribution" << endl;
     Network net2 = Network(NETWORK_SIZE);
-    net.getBinomialDegreeSequence(5, 0.5);
-    net.matchStubs();
-    net.printNetwork();
+    net2.getBinomialDegreeSequence(5, 0.5);
+    net2.matchStubs();
+    net2.printNetwork();
 
+    cout << endl << "Percolation: " << endl;
+    net2.nodePercolation();
+    */
     cout << endl << "all done" << endl;
 }
