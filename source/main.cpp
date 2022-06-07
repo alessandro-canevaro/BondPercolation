@@ -4,27 +4,27 @@
 
 using namespace std;
 
-#define NETWORK_SIZE 3
+#define NETWORK_SIZE 50
 
 int main(){
 
     cout << "Uniform degree distribution" << endl;
     Network net = Network(NETWORK_SIZE);
-    net.getUniformDegreeSequence(1, 4);
+    net.getUniformDegreeSequence(1, 10);
     net.matchStubs();
-    net.printNetwork();
+    //net.printNetwork();
 
-    cout << endl << "Percolation: " << endl;
-    net.nodePercolation();
-    /*
-    cout << endl << "Binomial degree distribution" << endl;
-    Network net2 = Network(NETWORK_SIZE);
-    net2.getBinomialDegreeSequence(5, 0.5);
-    net2.matchStubs();
-    net2.printNetwork();
+    //cout << endl << "Percolation: " << endl;
+    vector<int> sr = net.nodePercolation();
+    /*for(int m: sr){
+        cout << m << ' ';
+    }
+    cout << endl;*/
 
-    cout << endl << "Percolation: " << endl;
-    net2.nodePercolation();
-    */
+    vector<float> result = net.computeGiantClusterPlot(20, sr);
+    for(float i: result){
+        cout << i << ' ';
+    }
+
     cout << endl << "all done" << endl;
 }

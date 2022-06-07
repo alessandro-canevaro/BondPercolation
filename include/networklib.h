@@ -12,7 +12,11 @@ class Network{
 
         void printNetwork();
 
-        void nodePercolation();
+        vector<int> nodePercolation();
+
+        float computeMeanSizeOfLargestCluster(float phi, vector<int> sr);
+
+        vector<float> computeGiantClusterPlot(int bins, vector<int> sr);
 
 
     protected:
@@ -20,3 +24,5 @@ class Network{
         vector<int> sequence;
         vector<vector<int>> network;
 };
+
+long long int binomialCoeff(const int n, const int k);

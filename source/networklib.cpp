@@ -97,7 +97,7 @@ void Network::printNetwork(){
     }
 }
 
-void Network::nodePercolation(){
+vector<int> Network::nodePercolation(){
     random_device rd;
     mt19937 gen(rd());
 
@@ -107,30 +107,22 @@ void Network::nodePercolation(){
     }
     shuffle(node_order.begin(), node_order.end(), gen);
 
-    for (int j=0; j<nodes; j++){
-        cout << node_order[j] << ' ';
-    }
-    cout << endl;
-
-    int cluster_count = 0;
-    int r = 1;
+    vector<int> sr;
+    int cluster_count = 0, max = 0;
+    //int r = 1;
     vector<vector<int>> clusters;
     for(int n: node_order){
-        cout << "r: " << r << " considering node: " << n << endl;
-        for(int i=0; i<clusters.size(); i++){
-            cout << "cluster " << i << " contains nodes: ";
-            for(auto j: clusters[i])  cout << j << ' ';
-            cout << endl;
-        }
+        //cout << "r: " << r << " considering node: " << n << endl;
+
         vector<int> merge;
         for(int e: network[n]){
-            cout << "considering edge to node: " << e << endl;
+            //cout << "considering edge to node: " << e << endl;
             for(int cls=0; cls<clusters.size(); cls++){
                 auto found = find(begin(clusters[cls]), end(clusters[cls]), e);
                 if(found != end(clusters[cls])){
-                    cout << "the node was found in cluster with label: " << cls << endl;
+                    //cout << "the node was found in cluster with label: " << cls << endl;
                     if(find(merge.begin(), merge.end(), cls) != merge.end()){
-                        cout << "element already in merge" << endl;
+                        //cout << "element already in merge" << endl;
                     }
                     else{
                         merge.push_back(cls);
@@ -143,21 +135,53 @@ void Network::nodePercolation(){
         vector<int> new_cls{n};
         clusters.push_back(new_cls);
         cluster_count++;
-        cout << "node: " << n << " is added in a new cluster. total: " << cluster_count << endl;
+        //cout << "node: " << n << " is added in a new cluster. total: " << cluster_count << endl;
         sort(merge.begin(), merge.end(), greater<int>());
         for(int cls: merge){
-            cout << "cluster " << cls << " inserted into " << clusters.size()-1 << endl;
+            //cout << "cluster " << cls << " inserted into " << clusters.size()-1 << endl;
             clusters[clusters.size()-1].insert(clusters[clusters.size()-1].end(), clusters[cls].begin(), clusters[cls].end());
             clusters.erase(clusters.begin() + cls);
             cluster_count--;
         }
-        cout << "total clusters: " << cluster_count << endl;
-        r++;
+        //cout << "total clusters: " << cluster_count << endl;
+        //r++;
+
+        max = 0;
+        for(auto cls: clusters){
+            if(cls.size() > max){
+                max = cls.size();
+            }
+        }
+        sr.push_back(max);
     }
-    cout << endl << "END" << endl;
-    for(int i=0; i<clusters.size(); i++){
-        cout << "cluster " << i << " contains nodes: ";
-        for(auto j: clusters[i])  cout << j << ' ';
-        cout << endl;
+
+    return sr;
+}
+
+float Network::computeMeanSizeOfLargestCluster(float phi, vector<int> sr){
+    float result = 0;
+    for(int r=1; r<nodes; r++){
+        //cout << "bin of " <<nodes << " and " << r << " is: " << binomialCoeff(nodes, r)*pow(phi, r)*pow(1-phi, nodes-r) << endl;
+        result += binomialCoeff(nodes, r)*pow(phi, r)*pow(1-phi, nodes-r)*sr[r-1];
     }
+    return result;
+}
+
+vector<float> Network::computeGiantClusterPlot(int bins, vector<int> sr){
+    vector<float> result;
+    for(int i=0; i<bins; i++){
+        result.push_back(this->computeMeanSizeOfLargestCluster(i/(float)bins, sr));
+    }
+    return result;
+}
+
+long long int binomialCoeff(const int n, const int k) {
+    std::vector<long long int> aSolutions(k);
+    aSolutions[0] = n - k + 1;
+
+    for (int i = 1; i < k; ++i) {
+        aSolutions[i] = aSolutions[i - 1] * (n - k + 1 + i) / (i + 1);
+    }
+
+    return aSolutions[k - 1];
 }
