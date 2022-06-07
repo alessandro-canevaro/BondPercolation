@@ -30,6 +30,24 @@ void Network::getUniformDegreeSequence(int a, int b){
     sequence = degree_sequence;
 }
 
+void Network::getBinomialDegreeSequence(int n, float p){
+    random_device rd;
+    mt19937 gen(rd());
+    binomial_distribution<> distrib(n, p);
+
+    vector<int> degree_sequence (nodes);
+
+    int sum = 1;
+    while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even
+        for (int i=0; i<nodes; i++){
+            degree_sequence[i] = distrib(gen);
+        }
+        sum = accumulate(degree_sequence.begin(), degree_sequence.end(), 0);
+    }
+
+    sequence = degree_sequence;
+}
+
 void Network::matchStubs(){
     random_device rd;
     mt19937 gen(rd());

@@ -6,6 +6,8 @@ class Network{
 
         void getUniformDegreeSequence(int a, int b);
 
+        void getBinomialDegreeSequence(int n, float p);
+
         void matchStubs();
 
         void printNetwork();
