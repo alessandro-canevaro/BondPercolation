@@ -109,9 +109,12 @@ vector<int> Network::nodePercolation(){
 
     vector<int> sr;
     int cluster_count = 0, max = 0;
-    //int r = 1;
+    int r = 1;
     vector<vector<int>> clusters;
     for(int n: node_order){
+        if (r % (nodes/10) == 0){
+            cout << "#";
+        }
         //cout << "r: " << r << " considering node: " << n << endl;
 
         vector<int> merge;
@@ -144,7 +147,7 @@ vector<int> Network::nodePercolation(){
             cluster_count--;
         }
         //cout << "total clusters: " << cluster_count << endl;
-        //r++;
+        r++;
 
         max = 0;
         for(auto cls: clusters){
@@ -159,10 +162,21 @@ vector<int> Network::nodePercolation(){
 }
 
 float Network::computeMeanSizeOfLargestCluster(float phi, vector<int> sr){
+    std::vector<float> pmf(nodes + 1, 0.0);
+    pmf[0] = 1.0;
+
+    auto k = 0;
+    for (auto n = 0; n < nodes; n++) {
+        for (k = n + 1; k > 0; --k) {
+        pmf[k] += phi * (pmf[k - 1] - pmf[k]);
+        }
+        pmf[0] *= (1 - phi);
+    }
+
     float result = 0;
     for(int r=1; r<nodes; r++){
-        //cout << "bin of " <<nodes << " and " << r << " is: " << binomialCoeff(nodes, r)*pow(phi, r)*pow(1-phi, nodes-r) << endl;
-        result += binomialCoeff(nodes, r)*pow(phi, r)*pow(1-phi, nodes-r)*sr[r-1];
+        //cout << "bin of " << nodes << " and " << r << " is: " << binomialCoeff(nodes, r)*pow(phi, r)*pow(1-phi, nodes-r) << " equal to " << pmf[r] << endl;
+        result += pmf[r]*sr[r-1];//binomialCoeff(nodes, r)*pow(phi, r)*pow(1-phi, nodes-r)*sr[r-1];
     }
     return result;
 }
