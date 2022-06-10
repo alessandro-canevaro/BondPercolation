@@ -5,11 +5,11 @@
 
 using namespace std;
 
-#define RUNS 5
+#define RUNS 10
 #define NETWORK_SIZE 1000
-#define NETWORK_TYPE 'b'
-#define PARAM1 NETWORK_SIZE
-#define PARAM2 0.003
+#define NETWORK_TYPE 'p'
+#define PARAM1 2.5
+#define PARAM2 100
 
 int main(){
     GiantCompSize gcs = GiantCompSize();

@@ -8,7 +8,7 @@ class Network{
 
         void generateBinomialDegreeSequence(int n, float p);
 
-        void generatePowerLawDegreeSequence(float alpha);
+        void generatePowerLawDegreeSequence(float alpha, int x_max);
 
         void matchStubs();
 

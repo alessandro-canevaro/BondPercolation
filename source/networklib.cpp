@@ -49,8 +49,23 @@ void Network::generateBinomialDegreeSequence(int n, float p){
     sequence = degree_sequence;
 }
 
-void Network::generatePowerLawDegreeSequence(float alpha){
+void Network::generatePowerLawDegreeSequence(float alpha, int x_max){
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<> distrib(0, 1);
 
+    vector<int> degree_sequence (nodes);
+
+    int sum = 1;
+    while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even
+        for (int i=0; i<nodes; i++){
+            degree_sequence[i] = (int) pow(((pow(x_max, (-alpha+1)) - 1)*distrib(gen) + 1), (1/(-alpha+1)));
+            //cout << degree_sequence[i] << ' ';
+        }
+        sum = accumulate(degree_sequence.begin(), degree_sequence.end(), 0);
+    }
+    
+    sequence = degree_sequence;
 }
 
 void Network::matchStubs(){
@@ -182,7 +197,7 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float
             net.generateBinomialDegreeSequence((int) param1, param2);
             break;
         case 'p':
-            net.generatePowerLawDegreeSequence((int) param1);
+            net.generatePowerLawDegreeSequence(param1, (int) param2);
             break;
         }
         net.matchStubs();
