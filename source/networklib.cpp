@@ -13,7 +13,7 @@ Network::Network(int n){
     vector<vector<int>> network;
 }
 
-void Network::getUniformDegreeSequence(int a, int b){
+void Network::generateUniformDegreeSequence(int a, int b){
     random_device rd;
     mt19937 gen(rd());
     uniform_int_distribution<> distrib(a, b);
@@ -31,7 +31,7 @@ void Network::getUniformDegreeSequence(int a, int b){
     sequence = degree_sequence;
 }
 
-void Network::getBinomialDegreeSequence(int n, float p){
+void Network::generateBinomialDegreeSequence(int n, float p){
     random_device rd;
     mt19937 gen(rd());
     binomial_distribution<> distrib(n, p);
@@ -47,6 +47,10 @@ void Network::getBinomialDegreeSequence(int n, float p){
     }
 
     sequence = degree_sequence;
+}
+
+void Network::generatePowerLawDegreeSequence(float alpha){
+
 }
 
 void Network::matchStubs(){
@@ -97,7 +101,7 @@ void Network::printNetwork(){
     }
 }
 
-vector<int> Network::nodePercolation(){
+void Network::nodePercolation(){
     random_device rd;
     mt19937 gen(rd());
 
@@ -107,15 +111,11 @@ vector<int> Network::nodePercolation(){
     }
     shuffle(node_order.begin(), node_order.end(), gen);
 
-    vector<int> sr;
+    vector<int> results;
     int cluster_count = 0, max = 0;
     int r = 1;
     vector<vector<int>> clusters;
     for(int n: node_order){
-        if (r % (nodes/10) == 0){
-            cout << "#";
-        }
-        //cout << "r: " << r << " considering node: " << n << endl;
 
         vector<int> merge;
         for(int e: network[n]){
@@ -155,14 +155,70 @@ vector<int> Network::nodePercolation(){
                 max = cls.size();
             }
         }
-        sr.push_back(max);
+        results.push_back(max);
     }
 
+    sr = results;
+}
+
+vector<int> Network::getSr(){
     return sr;
 }
 
-float Network::computeMeanSizeOfLargestCluster(float phi, vector<int> sr){
-    std::vector<float> pmf(nodes + 1, 0.0);
+
+GiantCompSize::GiantCompSize(){
+    vector<vector<int>> sr_mat;
+}
+
+void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float param1, float param2){
+    vector<vector<int>> sr_matrix; 
+    for(int i=0; i<net_num; i++){
+        Network net = Network(net_size);
+        switch (type){
+        case 'u':
+            net.generateUniformDegreeSequence((int) param1, (int) param2);
+            break;
+        case 'b':
+            net.generateBinomialDegreeSequence((int) param1, param2);
+            break;
+        case 'p':
+            net.generatePowerLawDegreeSequence((int) param1);
+            break;
+        }
+        net.matchStubs();
+        net.nodePercolation();
+        sr_matrix.push_back(net.getSr());
+    }
+    sr_mat = sr_matrix;
+}
+
+vector<double> GiantCompSize::computeAverageGiantClusterSize(int bins){
+    vector<vector<int>> sr_mat_t = this->transpose(sr_mat);
+
+    vector<double> avg_sr;
+    for(int i=0; i<sr_mat_t.size(); i++){
+        avg_sr.push_back(this->average(sr_mat_t[i]));
+    }
+
+    vector<double> result;
+    for(int i=0; i<bins; i++){
+        result.push_back(this->computeGiantClusterSize(i/(float)bins, avg_sr));
+    }
+    return result;
+}
+
+double GiantCompSize::computeGiantClusterSize(float phi, vector<double> sr){
+    vector<double> pmf = this->getBinomialPMF(phi, sr.size());
+
+    double result = 0;
+    for(int r=1; r<sr.size(); r++){
+        result += pmf[r]*sr[r-1];
+    }
+    return result;
+}
+
+vector<double> GiantCompSize::getBinomialPMF(float phi, int nodes){
+    vector<double> pmf(nodes + 1, 0.0);
     pmf[0] = 1.0;
 
     auto k = 0;
@@ -172,30 +228,18 @@ float Network::computeMeanSizeOfLargestCluster(float phi, vector<int> sr){
         }
         pmf[0] *= (1 - phi);
     }
+    return pmf;
+}
 
-    float result = 0;
-    for(int r=1; r<nodes; r++){
-        //cout << "bin of " << nodes << " and " << r << " is: " << binomialCoeff(nodes, r)*pow(phi, r)*pow(1-phi, nodes-r) << " equal to " << pmf[r] << endl;
-        result += pmf[r]*sr[r-1];//binomialCoeff(nodes, r)*pow(phi, r)*pow(1-phi, nodes-r)*sr[r-1];
-    }
+vector<vector<int>> GiantCompSize::transpose(vector<vector<int>> data){
+    vector<vector<int> > result(data[0].size(), vector<int>(data.size()));
+    for (vector<int>::size_type i = 0; i < data[0].size(); i++) 
+        for (vector<int>::size_type j = 0; j < data.size(); j++) {
+            result[i][j] = data[j][i];
+        }
     return result;
 }
 
-vector<float> Network::computeGiantClusterPlot(int bins, vector<int> sr){
-    vector<float> result;
-    for(int i=0; i<bins; i++){
-        result.push_back(this->computeMeanSizeOfLargestCluster(i/(float)bins, sr));
-    }
-    return result;
-}
-
-long long int binomialCoeff(const int n, const int k) {
-    std::vector<long long int> aSolutions(k);
-    aSolutions[0] = n - k + 1;
-
-    for (int i = 1; i < k; ++i) {
-        aSolutions[i] = aSolutions[i - 1] * (n - k + 1 + i) / (i + 1);
-    }
-
-    return aSolutions[k - 1];
+double GiantCompSize::average(vector<int> data){
+    return reduce(data.begin(), data.end()) / (double)data.size();
 }
