@@ -1,0 +1,13 @@
+giant_component:
+  0:
+    runs: 5
+    network_size: 1000
+    network_type: b
+    param1: 1000
+    param2: 0.003
+  1:
+    runs: 10
+    network_size: 1000
+    network_type: p
+    param1: 2.5
+    param2: 100

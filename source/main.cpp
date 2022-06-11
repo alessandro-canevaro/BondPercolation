@@ -8,37 +8,84 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <string>
 #include <../include/networklib.h>
 
 using namespace std;
 
-#define RUNS 10
-#define NETWORK_SIZE 1000
-#define NETWORK_TYPE 'p'
-#define PARAM1 2.5
-#define PARAM2 100
+#define CONFIG_FILE_PATH "./experiments/config.yaml"
+#define PLOT_BINS 50
 
-int main(){
-    GiantCompSize gcs = GiantCompSize();
-    gcs.generateNetworks(RUNS, NETWORK_SIZE, NETWORK_TYPE, PARAM1, PARAM2);
-    vector<double> result = gcs.computeAverageGiantClusterSize(50);
+vector<vector<string>> parseGiantCompConfigFile(string path, char delimiter=':'){
+    vector<vector<string>> result;
+    string line;
+    ifstream myfile (path);
 
-    ofstream results_file("./results/node_perc_giant_cluster.csv");
-    if(results_file.is_open()){
-        results_file << RUNS << ',' << NETWORK_SIZE << ',' << NETWORK_TYPE << ',' << PARAM1 << ',' << PARAM2 << endl;
-
-        for(int i=0; i<result.size()-1; i++){
-            results_file << result[i] << ',';
-            cout << result[i] << ", ";
+    if (myfile.is_open()){
+        getline(myfile, line);
+        if(line == "giant_component:"){
+            cout << "Experiments on giant component" << endl;
+            while (getline(myfile, line)){
+                vector<string> params_value(5);
+                for(int i=0; i<5; i++){
+                    getline(myfile, line);
+                    //cout << line << endl;
+                    string str = line.substr(line.find(':')+1, line.size());
+                    //str.erase(remove_if(str.begin(), str.end(), isspace), str.end());
+                    params_value[i] = str;
+                }
+                result.push_back(params_value);
+            }
         }
-        results_file << result[result.size()-1];
-        cout << result[result.size()-1];
-
-        results_file.close();
+        else{
+            cout << "no experiments on giant compoinent found" << endl;
+        }
+        myfile.close();
     }
     else{
-        cout << "Unable to open file.";
+        cout << "Unable to open file";
+    } 
+    return result;
+}
+
+void saveResults(string path, vector<double> data){
+    ofstream results_file(path);
+    if(results_file.is_open()){
+        for(int i=0; i<data.size()-1; i++){
+            results_file << data[i] << ',';
+            //cout << result[i] << ", ";
+        }
+        results_file << data[data.size()-1];
+        //cout << result[result.size()-1];
+
+        results_file.close();
+        cout << "Result saved." << endl;
     }
+    else{
+        cout << "Unable to open file." << endl;;
+    }
+}
+
+int main(){
+    vector<vector<string>> exp_params = parseGiantCompConfigFile(CONFIG_FILE_PATH);
+
+    for(int i=0; i<exp_params.size(); i++){
+        cout << "Experiment: " << i << endl;
+
+        int runs = stoi(exp_params[i][0]);
+        int network_size = stoi(exp_params[i][1]);
+        char network_type = exp_params[i][2][1];
+        float param1 = stof(exp_params[i][3]);
+        float param2 = stof(exp_params[i][4]);
+        cout << runs <<' ' << network_size << ' ' << network_type << ' ' << param1 << ' ' << param2 << endl;
+
+        GiantCompSize gcs = GiantCompSize();
+        gcs.generateNetworks(runs, network_size, network_type, param1, param2);
+        vector<double> result = gcs.computeAverageGiantClusterSize(PLOT_BINS);
+
+        saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
+    }
+
 
     cout << endl << "all done" << endl;
     return 0;
