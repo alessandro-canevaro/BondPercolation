@@ -1,3 +1,10 @@
+/**
+* Main file for runnning experiments
+* @file main.cpp
+* @author Alessandro Canevaro
+* @version 11/06/2022
+*/
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -34,4 +41,5 @@ int main(){
     }
 
     cout << endl << "all done" << endl;
+    return 0;
 }
