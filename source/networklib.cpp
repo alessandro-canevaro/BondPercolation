@@ -1,3 +1,10 @@
+/**
+* Classes for generating a network, perform percolation and compute properties
+* @file networklib.cpp
+* @author Alessandro Canevaro
+* @version 11/06/2022
+*/
+
 #include <iostream>
 #include <random>
 #include <vector>
