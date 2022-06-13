@@ -187,6 +187,10 @@ void Network::nodePercolation(){
     sr = results;
 }
 
+vector<vector<int>> Network::getNetwork(){
+    return network;
+}
+
 vector<int> Network::getSr(){
     return sr;
 }

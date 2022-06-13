@@ -57,6 +57,11 @@ class Network{
         */
         void nodePercolation();
 
+        /** return the network as a vector of vectors containing the nodes and edges
+        * @return network
+        */
+        vector<vector<int>> getNetwork();
+
         /** return the percolation results, namely the vector containing the size of the largest cluster at each stage.
         * @return sr
         */

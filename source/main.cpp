@@ -67,6 +67,29 @@ void saveResults(string path, vector<double> data){
 }
 
 int main(){
+
+    /*
+    Network net = Network(10);
+    net.generateBinomialDegreeSequence(10, 0.3);
+    net.matchStubs();
+    vector<vector<int>> graph = net.getNetwork();
+
+    ofstream results_file("./results/raw/network.csv");
+    if(results_file.is_open()){
+        for(int i=0; i<graph.size(); i++){
+            for(int j=0; j<graph[i].size()-1; j++){
+                results_file << graph[i][j] << ',';
+            }
+            results_file << graph[i][graph[i].size()-1] << '\n';
+        }
+        results_file.close();
+        cout << "Result saved." << endl;
+    }
+    else{
+        cout << "Unable to open file." << endl;;
+    }
+    */
+
     vector<vector<string>> exp_params = parseGiantCompConfigFile(CONFIG_FILE_PATH);
 
     for(int i=0; i<exp_params.size(); i++){
