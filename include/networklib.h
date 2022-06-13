@@ -38,6 +38,11 @@ class Network{
         */
         void generatePowerLawDegreeSequence(float alpha, int x_max);
 
+        /** Computes the average value of the previously generated degree sequence
+        * @return mean value of the degree sequence
+        */
+        float getDegreeDistMean();
+
         /** Add edges to the network by matching stubs.
         * the neber of stubs for each node depends on the previously generate degree sequence.
         */

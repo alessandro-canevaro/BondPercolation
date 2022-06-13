@@ -75,6 +75,10 @@ void Network::generatePowerLawDegreeSequence(float alpha, int x_max){
     sequence = degree_sequence;
 }
 
+float Network::getDegreeDistMean(){
+    return reduce(sequence.begin(), sequence.end()) / (float)sequence.size();
+}
+
 void Network::matchStubs(){
     random_device rd;
     mt19937 gen(rd());
@@ -207,6 +211,7 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float
             net.generatePowerLawDegreeSequence(param1, (int) param2);
             break;
         }
+        //cout << "avg: " << net.getDegreeDistMean() << endl;
         net.matchStubs();
         net.nodePercolation();
         sr_matrix.push_back(net.getSr());

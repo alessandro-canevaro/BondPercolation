@@ -70,14 +70,14 @@ int main(){
     vector<vector<string>> exp_params = parseGiantCompConfigFile(CONFIG_FILE_PATH);
 
     for(int i=0; i<exp_params.size(); i++){
-        cout << "Experiment: " << i << endl;
+        cout << endl << "Experiment: " << i << endl;
 
         int runs = stoi(exp_params[i][0]);
         int network_size = stoi(exp_params[i][1]);
         char network_type = exp_params[i][2][1];
         float param1 = stof(exp_params[i][3]);
         float param2 = stof(exp_params[i][4]);
-        cout << runs <<' ' << network_size << ' ' << network_type << ' ' << param1 << ' ' << param2 << endl;
+        cout << "runs: " << runs << ", size: " << network_size << ", type: " << network_type << ", p1: " << param1 << ", p2: " << param2 << endl;
 
         GiantCompSize gcs = GiantCompSize();
         gcs.generateNetworks(runs, network_size, network_type, param1, param2);
