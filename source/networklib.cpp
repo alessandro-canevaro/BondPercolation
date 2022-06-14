@@ -56,7 +56,7 @@ void Network::generateBinomialDegreeSequence(int n, float p){
     sequence = degree_sequence;
 }
 
-void Network::generatePowerLawDegreeSequence(float alpha, int x_max){
+void Network::generatePowerLawDegreeSequence(float alpha){
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<> distrib(0, 1);
@@ -66,7 +66,7 @@ void Network::generatePowerLawDegreeSequence(float alpha, int x_max){
     int sum = 1;
     while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even
         for (int i=0; i<nodes; i++){
-            degree_sequence[i] = (int) pow(((pow(x_max, (-alpha+1)) - 1)*distrib(gen) + 1), (1/(-alpha+1)));
+            degree_sequence[i] = (int) pow(((pow(sqrt(nodes), (-alpha+1)) - 1)*distrib(gen) + 1), (1/(-alpha+1)));
             //cout << degree_sequence[i] << ' ';
         }
         sum = accumulate(degree_sequence.begin(), degree_sequence.end(), 0);
@@ -212,7 +212,7 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float
             net.generateBinomialDegreeSequence((int) param1, param2);
             break;
         case 'p':
-            net.generatePowerLawDegreeSequence(param1, (int) param2);
+            net.generatePowerLawDegreeSequence(param1);
             break;
         }
         //cout << "avg: " << net.getDegreeDistMean() << endl;

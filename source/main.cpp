@@ -14,7 +14,7 @@
 using namespace std;
 
 #define CONFIG_FILE_PATH "./experiments/config.yaml"
-#define PLOT_BINS 50
+#define PLOT_BINS 100
 
 vector<vector<string>> parseGiantCompConfigFile(string path, char delimiter=':'){
     vector<vector<string>> result;

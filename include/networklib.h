@@ -36,7 +36,7 @@ class Network{
         * @param alpha exponent
         * @param x_max upper limit of the uniform distribution (lower is 1)
         */
-        void generatePowerLawDegreeSequence(float alpha, int x_max);
+        void generatePowerLawDegreeSequence(float alpha);
 
         /** Computes the average value of the previously generated degree sequence
         * @return mean value of the degree sequence

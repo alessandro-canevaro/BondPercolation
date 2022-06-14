@@ -10,4 +10,4 @@ giant_component:
     network_size: 1000
     network_type: p
     param1: 2.5
-    param2: 100
+    param2: 0
