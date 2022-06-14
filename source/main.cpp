@@ -109,7 +109,6 @@ int main(){
         saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
     }
 
-
     cout << endl << "all done" << endl;
     return 0;
 }

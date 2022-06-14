@@ -119,6 +119,27 @@ void Network::matchStubs(){
 
 }
 
+void Network::removeSelfMultiEdges(){
+    vector<vector<int>> net(nodes);
+    for(int i=0; i<network.size(); i++){
+        vector<int> node = network[i];
+        sort(node.begin(), node.end());
+        node.push_back(-1); //extra value
+        for(int j=0; j<network[i].size(); j++){
+            if(node[j] == i){
+                //self loop
+                continue;
+            }
+            if(node[j] == node[j+1]){
+                //self loop or multiedge
+                continue;
+            }
+            net[i].push_back(node[j]);
+        }
+    }
+    network = net;
+}
+
 void Network::printNetwork(){
     for(int i=0; i<nodes; i++){
         cout << "node " << i << " is connected to: ";
@@ -217,6 +238,7 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float
         }
         //cout << "avg: " << net.getDegreeDistMean() << endl;
         net.matchStubs();
+        net.removeSelfMultiEdges();
         net.nodePercolation();
         sr_matrix.push_back(net.getSr());
     }

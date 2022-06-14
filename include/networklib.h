@@ -48,6 +48,10 @@ class Network{
         */
         void matchStubs();
 
+        /** Removes self and multi edges from the network.
+        */
+        void removeSelfMultiEdges();
+
         /** Print on the console the network.
         */
         void printNetwork();
