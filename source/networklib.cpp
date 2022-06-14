@@ -154,6 +154,90 @@ void Network::printNetwork(){
     }
 }
 
+/*
+void Network::nodePercolation(){
+    random_device rd;
+    mt19937 gen(rd());
+
+    vector<int> node_order;
+    for(int i=0; i<nodes; i++){
+        node_order.push_back(i);
+    }
+    shuffle(node_order.begin(), node_order.end(), gen);
+
+    vector<int> labels(nodes);
+    fill(labels.begin(), labels.end(), 0);
+
+    vector<vector<int>> net(nodes);
+    vector<int> cluster_head(nodes);
+    vector<int> cluster_size(nodes);
+    fill(cluster_size.begin(), cluster_size.end(), 0);
+    int new_label = 1;
+
+    vector<int> result(nodes);
+    int max_size = 0;
+
+    for(int n: node_order){
+        vector<int> tobemerged;
+        for(int n2: network[n]){
+            if(labels[n2] != 0 && labels[n2] != n){
+                net[n].push_back(n2);
+                net[n2].push_back(n);
+                if(find(tobemerged.begin(), tobemerged.end(), labels[n2]) == tobemerged.end()){
+                        tobemerged.push_back(labels[n2]);
+                }
+            }
+        }
+        labels[n] = new_label;
+        new_label++;
+        cluster_size[labels[n]]++;
+        cluster_head[labels[n]] = n;
+
+        for(int i=1; i<tobemerged.size(); i++){
+            //merge i-1 with i
+            vector<int> frontier;
+            int lab;
+            if(cluster_size[labels[i-1]]>cluster_size[labels[i]]){
+                //change labels of cluster i
+                frontier.push_back(cluster_head[labels[i]]);
+                lab = labels[i-1];                
+            }
+            else{
+                //change labels of cluster i-1
+                frontier.push_back(cluster_head[labels[i-1]]);
+                lab = labels[i];     
+            }
+            while (frontier.size() > 0){
+                if(labels[frontier.back()] == lab){
+                    //remove k from frontier
+                    frontier.pop_back();
+                }
+                else{
+                    //change labels, expand frontier, remove this node.
+                    cluster_size[labels[frontier.back()]]--;
+                    if(net[frontier.back()].size() > 0){
+                        cluster_head[labels[frontier.back()]] = net[frontier.back()][0];
+                    }
+                    else{
+                        cluster_head[labels[frontier.back()]] = 0;
+                    }
+                    labels[frontier.back()] = lab;
+                    cluster_size[lab]++;
+                    if(cluster_size[lab] > max_size){
+                        max_size = cluster_size[lab];
+                    }
+
+                    frontier.insert(frontier.begin(), net[frontier.back()].begin(), net[frontier.back()].end());
+                    frontier.pop_back();
+                }
+            }
+        }
+        result.push_back(max_size);
+    }
+    sr = result;
+}
+*/
+
 void Network::nodePercolation(){
     random_device rd;
     mt19937 gen(rd());
