@@ -59,14 +59,20 @@ void Network::generateBinomialDegreeSequence(int n, float p){
 void Network::generatePowerLawDegreeSequence(float alpha){
     random_device rd;
     mt19937 gen(rd());
-    uniform_real_distribution<> distrib(0, 1);
+    vector<double> intervals;
+    vector<double> weights;
+    for(int i=1; i <= (int) sqrt(nodes); i++){
+        intervals.push_back((double) i);
+        weights.push_back(pow(i, -alpha));
+    }
+    piecewise_constant_distribution<double> distribution(intervals.begin(), intervals.end(), weights.begin());
 
     vector<int> degree_sequence (nodes);
 
     int sum = 1;
     while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even
         for (int i=0; i<nodes; i++){
-            degree_sequence[i] = (int) pow(((pow(sqrt(nodes), (-alpha+1)) - 1)*distrib(gen) + 1), (1/(-alpha+1)));
+            degree_sequence[i] = (int) distribution(gen);
             //cout << degree_sequence[i] << ' ';
         }
         sum = accumulate(degree_sequence.begin(), degree_sequence.end(), 0);
@@ -236,7 +242,7 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float
             net.generatePowerLawDegreeSequence(param1);
             break;
         }
-        //cout << "avg: " << net.getDegreeDistMean() << endl;
+        //cout << "average degree: " << net.getDegreeDistMean() << endl;
         net.matchStubs();
         net.removeSelfMultiEdges();
         net.nodePercolation();

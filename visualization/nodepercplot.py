@@ -1,4 +1,5 @@
 import csv
+from socket import getfqdn
 import numpy as np
 
 from scipy import optimize
@@ -12,7 +13,7 @@ import yaml
 def binomialanalyticalsolution(phy, n, p, upper_limit=50):
     #print(binom.pmf(1, n, p))
     def fun(u): #15.3 15.4 15.5
-        return u-1+phy-(phy/(n*p))*sum([(k+1)*binom.pmf(k+1, n, p)*u**k for k in range(0, upper_limit)])
+        return u-1+phy-(phy/(n*p))*sum([(k+1)*binom.pmf(k+1, n, p)*(u**k) for k in range(0, upper_limit)])
 
     sol = optimize.root(fun, 0.5)
 
@@ -21,7 +22,35 @@ def binomialanalyticalsolution(phy, n, p, upper_limit=50):
     else:
         raise AssertionError
 
-    return phy*(1-sum([binom.pmf(k, n, p)*sol**k for k in range(0, upper_limit)])) #15.2
+    return phy*(1-sum([binom.pmf(k, n, p)*(sol**k) for k in range(0, upper_limit)])) #15.2
+
+def powerlawanalyticalsolution(phy, alpha, n):
+    #print(binom.pmf(1, n, p))
+    
+
+    def powerlawpmf(k):
+        C = sum([k**(-alpha) for k in range(1, int(n**0.5)+1)])
+
+        return (k**(-alpha))/C
+
+    mean = sum([k*powerlawpmf(k) for k in range(1, int(n**0.5)+1)])
+    
+    def g1(u):
+        return sum([(k+1)*powerlawpmf(k+1)*(u**k) for k in range(0, int(n**0.5))])/mean
+
+    def fun(u): #15.3 15.4 15.5
+        return u-1+phy-(phy)*g1(u)
+
+    sol = optimize.root(fun, 0)
+
+    if sol.success:
+        sol = sol.x
+    else:
+        raise AssertionError
+
+    def g0(u):
+        return sum([powerlawpmf(k)*(u**k) for k in range(1, int(n**0.5)+1)])
+    return phy*(1-g0(sol)) #15.2
 
 def main():
     with open("./experiments/config.yaml") as file:
@@ -33,6 +62,7 @@ def main():
             #header = next(csv.reader(file))
             row = next(csv.reader(file))
 
+        x = np.arange(0, 1, 1/len(row))
         row = [float(i)/int(exp_params['network_size']) for i in row] #convert to float and normalize
         if exp_params['network_type'] == 'u':
             legend = "n={}, runs={}; degree dist.: U({}, {})".format(exp_params['network_size'],
@@ -44,16 +74,18 @@ def main():
                                                                        exp_params['runs'],
                                                                        exp_params['param1'],
                                                                        exp_params['param2'])
+            truth = [binomialanalyticalsolution(i, exp_params['param1'], exp_params['param2']) for i in x]
         elif exp_params['network_type'] == 'p':
             legend = "n={}, runs={}; degree dist.: p({})".format(exp_params['network_size'],
                                                                  exp_params['runs'],
                                                                  exp_params['param1'])
+            truth = [powerlawanalyticalsolution(i, exp_params['param1'], exp_params['network_size']) for i in x]
 
 
-        x = np.arange(0, 1, 1/len(row))
+
         plt.plot(x, row, label=legend)
 
-        truth = [binomialanalyticalsolution(i, 1000, 0.003) for i in x]
+
         plt.plot(x, truth, label="Analytical solution")
 
         plt.xlim((-0.1, 1.1))
