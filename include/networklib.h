@@ -20,6 +20,8 @@ class Network{
         */
         Network(int n);
 
+        Network(string path);
+
         /** Generates a degree sequence according to the uniform distribution
         * @param a lower limit of the uniform distribution
         * @param b upper limit of the uniform distribution
@@ -71,12 +73,16 @@ class Network{
         */
         vector<int> getSr();
 
+        void generateUniformOrder();
+
+        void nodePercolationOld();
+
     protected:
 
         int nodes;
         vector<int> sequence;
         vector<vector<int>> network;
-
+        vector<int> node_order;
         vector<int> sr;
 };
 

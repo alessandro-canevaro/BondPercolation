@@ -154,100 +154,100 @@ void Network::printNetwork(){
     }
 }
 
-/*
-void Network::nodePercolation(){
+void Network::generateUniformOrder(){
     random_device rd;
     mt19937 gen(rd());
 
-    vector<int> node_order;
+    vector<int> order;
     for(int i=0; i<nodes; i++){
-        node_order.push_back(i);
+        order.push_back(i);
     }
-    shuffle(node_order.begin(), node_order.end(), gen);
+    shuffle(order.begin(), order.end(), gen);
 
+    node_order = order;
+}
+
+void Network::nodePercolation(){
     vector<int> labels(nodes);
-    fill(labels.begin(), labels.end(), 0);
+    fill(labels.begin(), labels.end(), -1);
 
-    vector<vector<int>> net(nodes);
-    vector<int> cluster_head(nodes);
-    vector<int> cluster_size(nodes);
+    vector<vector<int>> net(nodes); //contains nodes
+    vector<int> cluster_size(nodes); //contains labels to size
     fill(cluster_size.begin(), cluster_size.end(), 0);
-    int new_label = 1;
+    int new_label = 0;
 
-    vector<int> result(nodes);
-    int max_size = 0;
+    vector<int> result;
+    int max_size = 1;
 
     for(int n: node_order){
-        vector<int> tobemerged;
+        //cout << "node: " << n << endl;
+
+        labels[n] = new_label;
+        cluster_size[new_label]++;
+        new_label++;
         for(int n2: network[n]){
-            if(labels[n2] != 0 && labels[n2] != n){
+            if(labels[n2] != -1){
+                //cout << "adding edge between node " << n << " and " << n2 << endl;
                 net[n].push_back(n2);
                 net[n2].push_back(n);
-                if(find(tobemerged.begin(), tobemerged.end(), labels[n2]) == tobemerged.end()){
-                        tobemerged.push_back(labels[n2]);
-                }
-            }
-        }
-        labels[n] = new_label;
-        new_label++;
-        cluster_size[labels[n]]++;
-        cluster_head[labels[n]] = n;
 
-        for(int i=1; i<tobemerged.size(); i++){
-            //merge i-1 with i
-            vector<int> frontier;
-            int lab;
-            if(cluster_size[labels[i-1]]>cluster_size[labels[i]]){
-                //change labels of cluster i
-                frontier.push_back(cluster_head[labels[i]]);
-                lab = labels[i-1];                
-            }
-            else{
-                //change labels of cluster i-1
-                frontier.push_back(cluster_head[labels[i-1]]);
-                lab = labels[i];     
-            }
-            while (frontier.size() > 0){
-                if(labels[frontier.back()] == lab){
-                    //remove k from frontier
-                    frontier.pop_back();
-                }
-                else{
-                    //change labels, expand frontier, remove this node.
-                    cluster_size[labels[frontier.back()]]--;
-                    if(net[frontier.back()].size() > 0){
-                        cluster_head[labels[frontier.back()]] = net[frontier.back()][0];
+                if(labels[n] != labels[n2]){ //merge
+                    //cout << "merging cluster " << labels[n] << " with cluster " << labels[n2] << endl; 
+                    vector<int> frontier; //contains nodes
+                    int lab;
+                    if(cluster_size[labels[n]]>cluster_size[labels[n2]]){
+                        frontier.push_back(n2);
+                        lab = labels[n];                
                     }
                     else{
-                        cluster_head[labels[frontier.back()]] = 0;
+                        frontier.push_back(n);
+                        lab = labels[n2];     
                     }
-                    labels[frontier.back()] = lab;
-                    cluster_size[lab]++;
+
+                    cluster_size[lab] += cluster_size[labels[frontier.back()]];
+                    cluster_size[labels[frontier.back()]] = 0;
                     if(cluster_size[lab] > max_size){
                         max_size = cluster_size[lab];
                     }
 
-                    frontier.insert(frontier.begin(), net[frontier.back()].begin(), net[frontier.back()].end());
-                    frontier.pop_back();
+                    //cout << "lab: " << lab << endl;
+                    while (frontier.size() > 0){
+                        /*cout << "nodes in frontier: ";
+                        for (int f: frontier){
+                            cout << f <<" ";
+                        }
+                        cout << endl;*/
+
+                        if(labels[frontier.back()] != lab){
+                            //cout << "changing stuff" << endl;
+                            labels[frontier.back()] = lab;
+                            frontier.insert(frontier.begin(), net[frontier.back()].begin(), net[frontier.back()].end());
+                        }
+                        frontier.pop_back();
+                    }
                 }
             }
         }
+        //cout << "max size: " << max_size << endl;
         result.push_back(max_size);
+        /*
+        cout << "labels: ";
+        for(int a: labels){
+            cout << a << ", ";
+        }
+        cout << endl;
+        cout << "size: ";
+        for(int b: cluster_size){
+            cout << b << ", ";
+        }
+        cout << endl;
+        */
     }
     sr = result;
 }
-*/
 
-void Network::nodePercolation(){
-    random_device rd;
-    mt19937 gen(rd());
 
-    vector<int> node_order;
-    for(int i=0; i<nodes; i++){
-        node_order.push_back(i);
-    }
-    shuffle(node_order.begin(), node_order.end(), gen);
-
+void Network::nodePercolationOld(){
     vector<int> results;
     int cluster_count = 0, max = 0;
     int r = 1;
@@ -329,6 +329,7 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float
         //cout << "average degree: " << net.getDegreeDistMean() << endl;
         net.matchStubs();
         net.removeSelfMultiEdges();
+        net.generateUniformOrder();
         net.nodePercolation();
         sr_matrix.push_back(net.getSr());
     }
