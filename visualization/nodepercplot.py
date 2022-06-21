@@ -25,8 +25,6 @@ def binomialanalyticalsolution(phy, n, p, upper_limit=50):
     return phy*(1-sum([binom.pmf(k, n, p)*(sol**k) for k in range(0, upper_limit)])) #15.2
 
 def powerlawanalyticalsolution(phy, alpha, n):
-    #print(binom.pmf(1, n, p))
-    
 
     def powerlawpmf(k):
         C = sum([k**(-alpha) for k in range(1, int(n**0.5)+1)])
@@ -83,9 +81,7 @@ def main():
 
 
 
-        plt.plot(x, row, label=legend)
-
-
+        plt.plot(x, row, marker='o', fillstyle='none', linestyle='none', label=legend)
         plt.plot(x, truth, label="Analytical solution")
 
         plt.xlim((-0.1, 1.1))

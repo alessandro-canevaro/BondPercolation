@@ -14,7 +14,7 @@
 using namespace std;
 
 #define CONFIG_FILE_PATH "./experiments/config.yaml"
-#define PLOT_BINS 100
+#define PLOT_BINS 50
 
 vector<vector<string>> parseGiantCompConfigFile(string path, char delimiter=':'){
     vector<vector<string>> result;
@@ -108,7 +108,7 @@ int main(){
 
         saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
     }
-    
+
     cout << endl << "all done" << endl;
     return 0;
 }
