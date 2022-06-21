@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <random>
+#include <fstream>
 #include <vector>
 #include <numeric>
 #include <algorithm>
@@ -18,6 +19,40 @@ Network::Network(int n){
     nodes = n; // number of nodes
     vector<int> sequence;
     vector<vector<int>> network;
+}
+
+Network::Network(string path){
+    vector<int> v1, v2;
+    string line;
+    ifstream myfile (path);
+
+    if (myfile.is_open()){
+        while (getline(myfile, line)){
+            vector<string> params_value(2);
+            string str1 = line.substr(0, line.find(','));
+            string str2 = line.substr(line.find(',')+1, line.size());
+            v1.push_back(stoi(str1));
+            v2.push_back(stoi(str2));
+        }
+        myfile.close();
+    }
+    else{
+        cout << "Unable to open file";
+    } 
+
+    int m1 = *max_element(v1.begin(), v1.end());
+    int m2 = *max_element(v2.begin(), v2.end());
+
+    nodes = (m1 > m2) ? m1 : m2;
+    nodes++; //count node 0
+    vector<int> sequence;
+    vector<vector<int>> net(nodes);
+
+    for(int i=0; i<v1.size(); i++){
+        net[v1[i]].push_back(v2[i]);
+        net[v2[i]].push_back(v1[i]);
+    }
+    network = net;
 }
 
 void Network::generateUniformDegreeSequence(int a, int b){

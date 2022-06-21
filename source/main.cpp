@@ -90,27 +90,6 @@ int main(){
     }
     */
 
-   /*
-    Network net = Network(5);
-    net.generateBinomialDegreeSequence(10, 0.3);
-    net.matchStubs();
-    net.removeSelfMultiEdges();
-    net.printNetwork();
-    net.generateUniformOrder();
-    net.nodePercolation();
-    vector<int> sr = net.getSr();
-    for(int n: sr){
-        cout << n << ", ";
-    }
-    cout << endl;
-
-    net.nodePercolationOld();
-    vector<int> sr_old = net.getSr();
-    for(int n: sr_old){
-        cout << n << ", ";
-    }
-    cout << endl;
-    */
     vector<vector<string>> exp_params = parseGiantCompConfigFile(CONFIG_FILE_PATH);
 
     for(int i=0; i<exp_params.size(); i++){
