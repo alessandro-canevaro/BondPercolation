@@ -97,10 +97,20 @@ void Network::generatePowerLawDegreeSequence(float alpha){
     mt19937 gen(rd());
     vector<double> intervals;
     vector<double> weights;
-    for(int i=1; i <= (int) sqrt(nodes); i++){
+    //double c = 0;
+    for(int i=1; i < (int) sqrt(nodes) +1; i++){
         intervals.push_back((double) i);
         weights.push_back(pow(i, -alpha));
+        //c += pow(i, -alpha);
     }
+
+    /*
+    double mean = 0;
+    for(int i=1; i < (int) sqrt(nodes) +1; i++){
+        mean += i*pow(i, -alpha)/c;
+    }
+    cout << "theoretical mean: " << mean << endl;
+    */
     piecewise_constant_distribution<double> distribution(intervals.begin(), intervals.end(), weights.begin());
 
     vector<int> degree_sequence (nodes);
@@ -396,46 +406,31 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float
             break;
         }
         //cout << "average degree: " << net.getDegreeDistMean() << endl;
-        cout << "matching stubs" << endl;
         net.matchStubs();
-        cout << "removing self multi edge" << endl;
         net.removeSelfMultiEdges();
+        //cout << net.getDegreeDistMean() << endl;
         net.generateUniformOrder();
-        cout << "percolation" << endl;
         net.nodePercolation();
-        cout << "end" << endl;
         sr_matrix.push_back(net.getSr());
     }
     sr_mat = sr_matrix;
 }
 
 vector<double> GiantCompSize::computeAverageGiantClusterSize(int bins){
-    cout << "transpose" << endl;
     vector<vector<int>> sr_mat_t = this->transpose(sr_mat);
-    cout << "compute average" << endl;
     vector<double> avg_sr;
     for(int i=0; i<sr_mat_t.size(); i++){
         avg_sr.push_back(this->average(sr_mat_t[i]));
     }
-    cout << "compute cluster size" << endl;
     vector<double> result;
 
-    //vector<vector<double>> pmf = this->getBinomialPMF("./data/pmf/binomial/binomialpmf_n100000_b50.csv");
-
     for(int i=0; i<bins; i++){
-        cout << "computing pmf: " << i/(float)bins << endl;
-
-        //vector<double> oldopmf = this->getBinomialPMF(i/(float)bins, avg_sr.size());
-
         double tmp = 0;
         for(int r=0; r<avg_sr.size()+1; r++){
-            //cout << "new: " << pmf[i][r] << " old " << oldopmf[r] << endl;
             tmp += bin_pmf[i][r]*avg_sr[r];
         }
-
-        result.push_back(tmp);//this->computeGiantClusterSize(i/(float)bins, avg_sr));
+        result.push_back(tmp);
     }
-    cout << "done" << endl;
     return result;
 }
 
@@ -449,14 +444,14 @@ double GiantCompSize::computeGiantClusterSize(float phi, vector<double> sr){
 }
 
 void GiantCompSize::loadBinomialPMF(string path){
-    cout << "started" << endl;
+    cout << "loading pmf: " << path << endl;
     vector<vector<double>> result;
     string line;
     ifstream myfile (path);
 
     if (myfile.is_open()){;
         while (getline(myfile, line)){
-            cout << "reading line: " << result.size() << endl;
+            //cout << "reading line: " << result.size() << endl;
             vector<double> row;
             while(true){
                 auto pos = line.find(',');

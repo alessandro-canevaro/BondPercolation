@@ -27,11 +27,11 @@ def binomialanalyticalsolution(phy, n, p, upper_limit=50):
 def powerlawanalyticalsolution(phy, alpha, n):
 
     def powerlawpmf(k):
-        C = sum([k**(-alpha) for k in range(1, int(n**0.5)+1)])
-
+        C = sum([ks**(-alpha) for ks in range(1, int(n**0.5)+1)])
         return (k**(-alpha))/C
 
     mean = sum([k*powerlawpmf(k) for k in range(1, int(n**0.5)+1)])
+    #print(mean)
     
     def g1(u):
         return sum([(k+1)*powerlawpmf(k+1)*(u**k) for k in range(0, int(n**0.5))])/mean
