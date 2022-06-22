@@ -281,56 +281,89 @@ void Network::nodePercolation(){
     sr = result;
 }
 
+void Network::rewire(float p){
+    //while no edges left
+    //choose two edges and remove them from the current net
+    //swap them and add them to the new network
 
-void Network::nodePercolationOld(){
-    vector<int> results;
-    int cluster_count = 0, max = 0;
-    int r = 1;
-    vector<vector<int>> clusters;
-    for(int n: node_order){
+    //get edge list
+    //shuffle edge list
+    //for edge in edge list
+    //  take edge i and i-1, swap them and add them to the new net only if the new edges doesn already exists
+    // otherwise try another combination or do something else idk
 
-        vector<int> merge;
-        for(int e: network[n]){
-            //cout << "considering edge to node: " << e << endl;
-            for(int cls=0; cls<clusters.size(); cls++){
-                auto found = find(begin(clusters[cls]), end(clusters[cls]), e);
-                if(found != end(clusters[cls])){
-                    //cout << "the node was found in cluster with label: " << cls << endl;
-                    if(find(merge.begin(), merge.end(), cls) != merge.end()){
-                        //cout << "element already in merge" << endl;
-                    }
-                    else{
-                        merge.push_back(cls);
-                    }
-                    break;
-                }
+    vector<vector<int>> edgelist;
+    for(int n=0; n<nodes; n++){
+        for(int n2: network[n]){
+            if(n2 > n){
+                vector<int> edge{n, n2};
+                edgelist.push_back(edge);
             }
         }
-
-        vector<int> new_cls{n};
-        clusters.push_back(new_cls);
-        cluster_count++;
-        //cout << "node: " << n << " is added in a new cluster. total: " << cluster_count << endl;
-        sort(merge.begin(), merge.end(), greater<int>());
-        for(int cls: merge){
-            //cout << "cluster " << cls << " inserted into " << clusters.size()-1 << endl;
-            clusters[clusters.size()-1].insert(clusters[clusters.size()-1].end(), clusters[cls].begin(), clusters[cls].end());
-            clusters.erase(clusters.begin() + cls);
-            cluster_count--;
-        }
-        //cout << "total clusters: " << cluster_count << endl;
-        r++;
-
-        max = 0;
-        for(auto cls: clusters){
-            if(cls.size() > max){
-                max = cls.size();
-            }
-        }
-        results.push_back(max);
     }
 
-    sr = results;
+    random_device rd;
+    mt19937 gen(rd());
+
+    shuffle(edgelist.begin(), edgelist.end(), gen);
+
+    vector<vector<int>> net(nodes);
+    cout << "edgelist size " << edgelist.size() << endl;
+    while(edgelist.size() > 0){
+        int n1 = edgelist[edgelist.size()-1][0];
+        int n2 = edgelist[edgelist.size()-1][1];
+        int n3 = edgelist[edgelist.size()-2][0];
+        int n4 = edgelist[edgelist.size()-2][1]; 
+
+        //check that there are 4 distinct nodes (we already know n1 != n2 and n3 != n4)
+        bool cond = n1 != n3 && 
+                    n2 != n4 && 
+                    n1 != n4 && 
+                    n2 != n3;
+        
+        bool cond1 = cond &&
+                     find(net[n1].begin(), net[n1].end(), n3) == net[n1].end() && 
+                     find(net[n2].begin(), net[n2].end(), n4) == net[n2].end();
+        bool cond2 = cond &&
+                     find(net[n1].begin(), net[n1].end(), n4) == net[n1].end() &&
+                     find(net[n2].begin(), net[n2].end(), n3) == net[n2].end();
+        cout << n1 << ", " << n2 << ", " << n3 << ", " << n4 << endl;
+
+        if(cond1){
+            cout << "in cond 1, adding edge between: " << n1 << "-" << n3 << " and " << n2 << "-" << n4 << endl;
+            //switch
+            net[n1].push_back(n3);
+            net[n3].push_back(n1);
+            net[n2].push_back(n4);
+            net[n4].push_back(n2);
+            //pop both
+            edgelist.pop_back();
+            edgelist.pop_back();
+        }
+        else if(cond2){
+            cout << "in cond 2, adding edge between: " << n1 << "-" << n4 << " and " << n2 << "-" << n3 << endl;
+            //switch
+            net[n1].push_back(n4);
+            net[n4].push_back(n1);
+            net[n2].push_back(n3);
+            net[n3].push_back(n2);
+            //pop both
+            edgelist.pop_back();
+            edgelist.pop_back();
+
+        }
+        else{
+            cout << "in else" << endl;
+            //put first edge in the front
+            vector<int> new_edge{n1, n2};
+            edgelist.insert(edgelist.begin(), new_edge);
+            //pop last
+            edgelist.pop_back();
+        }
+    }
+
+    network = net;
+    cout << "rewire done" << endl;
 }
 
 vector<vector<int>> Network::getNetwork(){

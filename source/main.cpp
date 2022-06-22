@@ -90,6 +90,11 @@ int main(){
     }
     */
 
+    Network net = Network("./data/edge_list.csv");
+    net.printNetwork();
+    net.rewire(0);
+    net.printNetwork();
+    /*
     vector<vector<string>> exp_params = parseGiantCompConfigFile(CONFIG_FILE_PATH);
 
     for(int i=0; i<exp_params.size(); i++){
@@ -108,7 +113,7 @@ int main(){
 
         saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
     }
-
+    */
     cout << endl << "all done" << endl;
     return 0;
 }

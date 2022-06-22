@@ -75,7 +75,7 @@ class Network{
 
         void generateUniformOrder();
 
-        void nodePercolationOld();
+        void rewire(float p);
 
     protected:
 
