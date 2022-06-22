@@ -89,12 +89,12 @@ int main(){
         cout << "Unable to open file." << endl;;
     }
     */
-
+    /*
     Network net = Network("./data/edge_list.csv");
     net.printNetwork();
     net.rewire(0);
     net.printNetwork();
-    /*
+    */
     vector<vector<string>> exp_params = parseGiantCompConfigFile(CONFIG_FILE_PATH);
 
     for(int i=0; i<exp_params.size(); i++){
@@ -108,12 +108,13 @@ int main(){
         cout << "runs: " << runs << ", size: " << network_size << ", type: " << network_type << ", p1: " << param1 << ", p2: " << param2 << endl;
 
         GiantCompSize gcs = GiantCompSize();
+        gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv");
         gcs.generateNetworks(runs, network_size, network_type, param1, param2);
         vector<double> result = gcs.computeAverageGiantClusterSize(PLOT_BINS);
 
         saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
     }
-    */
+    
     cout << endl << "all done" << endl;
     return 0;
 }

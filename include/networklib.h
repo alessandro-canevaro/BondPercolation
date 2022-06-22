@@ -112,6 +112,8 @@ class GiantCompSize{
         */
         vector<double> computeAverageGiantClusterSize(int bins);
 
+        void loadBinomialPMF(string path);
+
     protected:
 
         /** Computes the average size of the giant component for a given value of the occupation probability
@@ -128,6 +130,8 @@ class GiantCompSize{
         */
         vector<double> getBinomialPMF(float phi, int nodes);
 
+        vector<vector<double>> getBinomialPMF(string path);
+
         /** Transpose a vector of vector matrix
         * @param data input matrix
         * @return transposed input matrix
@@ -141,4 +145,6 @@ class GiantCompSize{
         double average(vector<int> data);
 
         vector<vector<int>> sr_mat;
+
+        vector<vector<double>> bin_pmf;
 };
