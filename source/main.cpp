@@ -16,7 +16,7 @@ using namespace std;
 #define CONFIG_FILE_PATH "./experiments/test.yaml"
 #define PLOT_BINS 51
 
-vector<vector<string>> parseGiantCompConfigFile(string path, char delimiter=':'){
+vector<vector<string>> parseGiantCompConfigFile(string path, char delimiter=':', int params_num=6){
     vector<vector<string>> result;
     string line;
     ifstream myfile (path);
@@ -26,8 +26,8 @@ vector<vector<string>> parseGiantCompConfigFile(string path, char delimiter=':')
         if(line == "giant_component:"){
             cout << "Experiments on giant component" << endl;
             while (getline(myfile, line)){
-                vector<string> params_value(5);
-                for(int i=0; i<5; i++){
+                vector<string> params_value(params_num);
+                for(int i=0; i<params_num; i++){
                     getline(myfile, line);
                     //cout << line << endl;
                     string str = line.substr(line.find(':')+1, line.size());
@@ -69,27 +69,6 @@ void saveResults(string path, vector<double> data){
 int main(){
 
     /*
-    Network net = Network(10);
-    net.generateBinomialDegreeSequence(10, 0.3);
-    net.matchStubs();
-    vector<vector<int>> graph = net.getNetwork();
-
-    ofstream results_file("./results/raw/network.csv");
-    if(results_file.is_open()){
-        for(int i=0; i<graph.size(); i++){
-            for(int j=0; j<graph[i].size()-1; j++){
-                results_file << graph[i][j] << ',';
-            }
-            results_file << graph[i][graph[i].size()-1] << '\n';
-        }
-        results_file.close();
-        cout << "Result saved." << endl;
-    }
-    else{
-        cout << "Unable to open file." << endl;;
-    }
-    */
-    /*
     Network net = Network("./data/edge_list.csv");
     net.printNetwork();
     net.rewire(0);
@@ -103,17 +82,22 @@ int main(){
         int runs = stoi(exp_params[i][0]);
         int network_size = stoi(exp_params[i][1]);
         char network_type = exp_params[i][2][1];
-        float param1 = stof(exp_params[i][3]);
-        float param2 = stof(exp_params[i][4]);
-        cout << "runs: " << runs << ", size: " << network_size << ", type: " << network_type << ", p1: " << param1 << ", p2: " << param2 << endl;
+        char attack_type = exp_params[i][3][1];
+        float param1 = stof(exp_params[i][4]);
+        float param2 = stof(exp_params[i][5]);
+        cout << "runs: " << runs << ", size: " << network_size << ", type: " << network_type << ", attack: " << attack_type << ", p1: " << param1 << ", p2: " << param2 << endl;
 
         GiantCompSize gcs = GiantCompSize();
-        gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv");
-        gcs.generateNetworks(runs, network_size, network_type, param1, param2);
-        //gcs.printNeighborDegreeAvg(runs, network_size, network_type, param1, param2);
-        vector<double> result = gcs.computeAverageGiantClusterSize(PLOT_BINS);
-
-        saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
+        gcs.generateNetworks(runs, network_size, network_type, attack_type, param1, param2);
+        if(attack_type == 't'){
+            vector<double> result = gcs.computeAverageGiantClusterSizeAsFunctionOfK();
+            saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
+        }
+        else{
+            gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv");
+            vector<double> result = gcs.computeAverageGiantClusterSize(PLOT_BINS);
+            saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
+        }
     }
     
     cout << endl << "all done" << endl;

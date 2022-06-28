@@ -85,6 +85,8 @@ class Network{
 
         void generateHighestDegreeFirstOrder();
 
+        vector<int> getSasfunctionofK(int max_degree);
+
     protected:
 
         int nodes;
@@ -112,13 +114,15 @@ class GiantCompSize{
         * @param param1 first parameter passed to the degree sequence generating function
         * @param param2 second parameter passed to the degree sequence generating function
         */
-        void generateNetworks(int net_num, int net_size, char type, float param1, float param2);
+        void generateNetworks(int net_num, int net_size, char type, char attack_type, float param1, float param2);
 
         /** Computes the average size of the giant component for a range of values of the occupation probability
         * @param bins the occupation probability range is splitted into bins values
         * @return vector of size bins containing the results for the diferrent values of the occupation probability
         */
         vector<double> computeAverageGiantClusterSize(int bins);
+
+        vector<double> computeAverageGiantClusterSizeAsFunctionOfK();
 
         void loadBinomialPMF(string path);
 
@@ -154,11 +158,13 @@ class GiantCompSize{
         * @param data input vector
         * @return average value of the input vector
         */
-        double average(vector<int> data);
+        double average(vector<int> data, bool all=true);
 
         double average(vector<double> data);
 
         vector<vector<int>> sr_mat;
+
+        vector<vector<int>> sk_mat;
 
         vector<vector<double>> bin_pmf;
 };

@@ -246,7 +246,7 @@ void Network::generateHighestDegreeFirstOrder(){
         degree_list[network[i].size()].push_back(i);
     }
 
-    for(int i=degree_list.size()-1; i>=0; i--){
+    for(int i=0; i<degree_list.size(); i++){
         if(degree_list[i].size() == 0){
             continue;
         }
@@ -256,6 +256,22 @@ void Network::generateHighestDegreeFirstOrder(){
     }
 
     node_order = order;
+}
+
+vector<int> Network::getSasfunctionofK(int max_degree){
+    vector<int> result(max_degree);
+    fill(result.begin(), result.end(), 0);
+    int previous_k = network[node_order[0]].size();
+    result[previous_k] = sr[0];
+    //cout << previous_k << " - " << sr[0] << endl;
+    for(int i = 1; i<nodes; i++){
+        if(previous_k < network[node_order[i]].size()){
+            previous_k = network[node_order[i]].size();
+            //cout << previous_k << " - " << sr[i] << endl;
+            result[previous_k] = sr[i];
+        }
+    }
+    return result;
 }
 
 void Network::nodePercolation(){
@@ -422,10 +438,6 @@ bool Network::isConnected(){
     return nodes == n;
 }
 
-GiantCompSize::GiantCompSize(){
-    vector<vector<int>> sr_mat;
-}
-
 vector<double> Network::getNeighborDegreeAvg(){
     vector<double> degree(int(pow(nodes, 0.5))+1);
     vector<double> degree_count(int(pow(nodes, 0.5))+1);
@@ -451,6 +463,11 @@ vector<double> Network::getNeighborDegreeAvg(){
     }
 
     return degree;
+}
+
+GiantCompSize::GiantCompSize(){
+    vector<vector<int>> sr_mat;
+    vector<vector<int>> sk_mat;
 }
 
 void GiantCompSize::printNeighborDegreeAvg(int net_num, int net_size, char type, float param1, float param2){
@@ -479,8 +496,9 @@ void GiantCompSize::printNeighborDegreeAvg(int net_num, int net_size, char type,
     cout << endl;
 }
 
-void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float param1, float param2){
+void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char attack_type, float param1, float param2){
     vector<vector<int>> sr_matrix; 
+    vector<vector<int>> sk_matrix;
     double avgsize = 0;
     
     for(int i=0; i<net_num; i++){
@@ -499,19 +517,37 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float
         //cout << "average degree: " << net.getDegreeDistMean() << endl;
         net.matchStubs();
         net.removeSelfMultiEdges();
-        //net.printExcessDegreeAvg();
-        //cout << net.getDegreeDistMean() << endl;
-        //cout << "connection: " << net.isConnected() << endl;
-        //net.rewire(100000);
-        //cout << "connection: " << net.isConnected() << endl;
-        cout << i << endl;
-        avgsize += net.getGiantClusterSize();
-        net.generateUniformOrder();
+        //cout << i << endl;
+        //avgsize += net.getGiantClusterSize();
+
+        if(attack_type == 't'){
+            net.generateHighestDegreeFirstOrder();
+        }
+        else{
+            net.generateUniformOrder();
+        }
+
         net.nodePercolation();
-        sr_matrix.push_back(net.getSr());
+
+        if(attack_type == 't'){
+            sk_matrix.push_back(net.getSasfunctionofK(20));
+        }
+        else{
+            sr_matrix.push_back(net.getSr());
+        }
     }
-    cout << "avg max size: " << avgsize / net_num << endl;
+    //cout << "avg max size: " << avgsize / net_num << endl;
+    sk_mat = sk_matrix;
     sr_mat = sr_matrix;
+}
+
+vector<double> GiantCompSize::computeAverageGiantClusterSizeAsFunctionOfK(){
+    vector<vector<int>> sk_t = this->transpose(sk_mat);
+    vector<double> result;
+    for(vector<int> i: sk_t){
+        result.push_back(this->average(i, false));
+    }
+    return result;
 }
 
 vector<double> GiantCompSize::computeAverageGiantClusterSize(int bins){
@@ -615,8 +651,17 @@ vector<vector<double>> GiantCompSize::transpose(vector<vector<double>> data){
     return result;
 }
 
-double GiantCompSize::average(vector<int> data){
-    return reduce(data.begin(), data.end()) / (double)data.size();
+double GiantCompSize::average(vector<int> data, bool all){
+    if (all){
+        return reduce(data.begin(), data.end()) / (double)data.size();
+    }
+    else{
+        double sum = (double) data.size()-count(data.begin(), data.end(), 0);
+        if(sum == 0){
+            return 0;
+        }
+        return reduce(data.begin(), data.end()) / sum;//data.size();
+    }
 }
 
 double GiantCompSize::average(vector<double> data){

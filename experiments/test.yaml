@@ -1,7 +1,8 @@
 giant_component:
   0:
     runs: 100
-    network_size: 10000
-    network_type: p
-    param1: 2.5
-    param2: 0
+    network_size: 100000
+    network_type: b
+    attack_type: t
+    param1: 100000
+    param2: 0.00003
