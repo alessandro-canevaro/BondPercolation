@@ -13,8 +13,8 @@
 
 using namespace std;
 
-#define CONFIG_FILE_PATH "./experiments/config.yaml"
-#define PLOT_BINS 50
+#define CONFIG_FILE_PATH "./experiments/test.yaml"
+#define PLOT_BINS 51
 
 vector<vector<string>> parseGiantCompConfigFile(string path, char delimiter=':'){
     vector<vector<string>> result;
@@ -110,6 +110,7 @@ int main(){
         GiantCompSize gcs = GiantCompSize();
         gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv");
         gcs.generateNetworks(runs, network_size, network_type, param1, param2);
+        //gcs.printNeighborDegreeAvg(runs, network_size, network_type, param1, param2);
         vector<double> result = gcs.computeAverageGiantClusterSize(PLOT_BINS);
 
         saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);

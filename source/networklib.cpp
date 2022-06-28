@@ -98,7 +98,7 @@ void Network::generatePowerLawDegreeSequence(float alpha){
     vector<double> intervals;
     vector<double> weights;
     //double c = 0;
-    for(int i=1; i < (int) sqrt(nodes) +1; i++){
+    for(int i=2; i < (int) sqrt(nodes) +1; i++){
         intervals.push_back((double) i);
         weights.push_back(pow(i, -alpha));
         //c += pow(i, -alpha);
@@ -119,7 +119,7 @@ void Network::generatePowerLawDegreeSequence(float alpha){
     while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even
         for (int i=0; i<nodes; i++){
             degree_sequence[i] = (int) distribution(gen);
-            //cout << degree_sequence[i] << ' ';
+            //cout << degree_sequence[i] << ',';
         }
         sum = accumulate(degree_sequence.begin(), degree_sequence.end(), 0);
     }
@@ -128,32 +128,50 @@ void Network::generatePowerLawDegreeSequence(float alpha){
 }
 
 float Network::getDegreeDistMean(){
-    return reduce(sequence.begin(), sequence.end()) / (float)sequence.size();
+    double avg = 0;
+    vector<int> dist(int((pow(nodes, 0.5)+1)));
+    for(vector<int> n: network){
+        dist[n.size()] ++;
+        avg += n.size();
+    }
+    //for(int i: dist){
+     //   cout << i << ",";
+    //}
+    //cout << endl;
+    return avg/network.size();// - reduce(sequence.begin(), sequence.end()) / (float)sequence.size();
 }
+
+float Network::getSecondOrderMoment(){
+    float mean = this->getDegreeDistMean();
+    float variance = 0;
+    for(vector<int> n: network){
+        variance += pow(n.size()-mean, 2);
+    }
+    variance = variance / (float) network.size();
+    return variance + pow(mean, 2);
+}
+
 
 void Network::matchStubs(){
     random_device rd;
     mt19937 gen(rd());
     uniform_int_distribution<> distrib(0, nodes-1);
 
-    vector<int> degree_sequence = sequence;
+    vector<int> degree_sequence = sequence; 
     vector<vector<int>> net (nodes);
 
+    //cout << "matched started" << endl;
     for(int i=0; i<nodes; i++){
+        //cout << "node " << i << endl;
+        //cout << "left stubs: " << accumulate(degree_sequence.begin(), degree_sequence.end(), 0) << endl;
         while(degree_sequence[i] > 0){
             //chose another (valid) node at random
             int node = -1;
             while(true){
                 node = distrib(gen);
-                if (node == i){ //self-edge case: we can stop if the node has at least 2 stubs
-                    if (degree_sequence[node] > 1){
-                        break;
-                    }
-                }
-                else{ //we can stop if the node has at least 1 stub
-                    if (degree_sequence[node] > 0){
-                        break;
-                    }
+                
+                if (degree_sequence[node] > 0){
+                    break;
                 }
             }
 
@@ -173,6 +191,7 @@ void Network::matchStubs(){
 
 void Network::removeSelfMultiEdges(){
     vector<vector<int>> net(nodes);
+    int removed = 0;
     for(int i=0; i<network.size(); i++){
         vector<int> node = network[i];
         sort(node.begin(), node.end());
@@ -180,15 +199,18 @@ void Network::removeSelfMultiEdges(){
         for(int j=0; j<network[i].size(); j++){
             if(node[j] == i){
                 //self loop
+                removed++;
                 continue;
             }
             if(node[j] == node[j+1]){
                 //self loop or multiedge
+                removed++;
                 continue;
             }
             net[i].push_back(node[j]);
         }
     }
+    //cout << "removed " << removed << " self or multi edges" << endl;
     network = net;
 }
 
@@ -213,6 +235,29 @@ void Network::generateUniformOrder(){
     node_order = order;
 }
 
+void Network::generateHighestDegreeFirstOrder(){
+    random_device rd;
+    mt19937 gen(rd());
+
+    vector<vector<int>> degree_list(nodes); //estimate of the highest degree
+    vector<int> order;
+
+    for(int i=0; i<network.size(); i++){
+        degree_list[network[i].size()].push_back(i);
+    }
+
+    for(int i=degree_list.size()-1; i>=0; i--){
+        if(degree_list[i].size() == 0){
+            continue;
+        }
+        vector<int> nodes = degree_list[i];
+        shuffle(nodes.begin(), nodes.end(), gen);
+        order.insert(order.end(), nodes.begin(), nodes.end());
+    }
+
+    node_order = order;
+}
+
 void Network::nodePercolation(){
     vector<int> labels(nodes);
     fill(labels.begin(), labels.end(), -1);
@@ -223,6 +268,7 @@ void Network::nodePercolation(){
     int new_label = 0;
 
     vector<int> result;
+    result.push_back(0); //phy=0 -> no nodes
     int max_size = 1;
 
     for(int n: node_order){
@@ -292,89 +338,41 @@ void Network::nodePercolation(){
     sr = result;
 }
 
-void Network::rewire(float p){
-    //while no edges left
-    //choose two edges and remove them from the current net
-    //swap them and add them to the new network
+int Network::getGiantClusterSize(){
+    vector<int> visited(nodes);
+    fill(visited.begin(), visited.end(), 0);
+    int pos = 0;
+    int c = 0; //number of clusters
+    int n; //number of nodes in cluster
+    int max_size = 0;
 
-    //get edge list
-    //shuffle edge list
-    //for edge in edge list
-    //  take edge i and i-1, swap them and add them to the new net only if the new edges doesn already exists
-    // otherwise try another combination or do something else idk
+    while(true){
+        auto found = find(visited.begin(), visited.end(), 0);
+        if(found == visited.end()){
+            break;
+        }
+        pos = found-visited.begin();
 
-    vector<vector<int>> edgelist;
-    for(int n=0; n<nodes; n++){
-        for(int n2: network[n]){
-            if(n2 > n){
-                vector<int> edge{n, n2};
-                edgelist.push_back(edge);
+        vector<int> frontier;
+        frontier.push_back(pos);
+        n=0;
+        c++;
+
+        while(frontier.size() > 0){
+            if(visited[frontier.back()] == 0){
+                visited[frontier.back()] = c;
+                n++;
+                frontier.insert(frontier.begin(), network[frontier.back()].begin(), network[frontier.back()].end());
             }
+            frontier.pop_back();
+        }
+        if(n > max_size){
+            max_size = n;
         }
     }
-
-    random_device rd;
-    mt19937 gen(rd());
-
-    shuffle(edgelist.begin(), edgelist.end(), gen);
-
-    vector<vector<int>> net(nodes);
-    cout << "edgelist size " << edgelist.size() << endl;
-    while(edgelist.size() > 0){
-        int n1 = edgelist[edgelist.size()-1][0];
-        int n2 = edgelist[edgelist.size()-1][1];
-        int n3 = edgelist[edgelist.size()-2][0];
-        int n4 = edgelist[edgelist.size()-2][1]; 
-
-        //check that there are 4 distinct nodes (we already know n1 != n2 and n3 != n4)
-        bool cond = n1 != n3 && 
-                    n2 != n4 && 
-                    n1 != n4 && 
-                    n2 != n3;
-        
-        bool cond1 = cond &&
-                     find(net[n1].begin(), net[n1].end(), n3) == net[n1].end() && 
-                     find(net[n2].begin(), net[n2].end(), n4) == net[n2].end();
-        bool cond2 = cond &&
-                     find(net[n1].begin(), net[n1].end(), n4) == net[n1].end() &&
-                     find(net[n2].begin(), net[n2].end(), n3) == net[n2].end();
-        cout << n1 << ", " << n2 << ", " << n3 << ", " << n4 << endl;
-
-        if(cond1){
-            cout << "in cond 1, adding edge between: " << n1 << "-" << n3 << " and " << n2 << "-" << n4 << endl;
-            //switch
-            net[n1].push_back(n3);
-            net[n3].push_back(n1);
-            net[n2].push_back(n4);
-            net[n4].push_back(n2);
-            //pop both
-            edgelist.pop_back();
-            edgelist.pop_back();
-        }
-        else if(cond2){
-            cout << "in cond 2, adding edge between: " << n1 << "-" << n4 << " and " << n2 << "-" << n3 << endl;
-            //switch
-            net[n1].push_back(n4);
-            net[n4].push_back(n1);
-            net[n2].push_back(n3);
-            net[n3].push_back(n2);
-            //pop both
-            edgelist.pop_back();
-            edgelist.pop_back();
-
-        }
-        else{
-            cout << "in else" << endl;
-            //put first edge in the front
-            vector<int> new_edge{n1, n2};
-            edgelist.insert(edgelist.begin(), new_edge);
-            //pop last
-            edgelist.pop_back();
-        }
-    }
-
-    network = net;
-    cout << "rewire done" << endl;
+    //cout << "c: " << c << endl;
+    //cout << "n: " << n << endl;
+    return max_size;
 }
 
 vector<vector<int>> Network::getNetwork(){
@@ -385,13 +383,106 @@ vector<int> Network::getSr(){
     return sr;
 }
 
+bool Network::isConnected(){
+
+    vector<int> visited(nodes);
+    fill(visited.begin(), visited.end(), 0);
+    int pos = 0;
+    int c = 0;
+    int n;
+
+    while(true){
+        auto found = find(visited.begin(), visited.end(), 0);
+        if(found == visited.end()){
+            break;
+        }
+        pos = found-visited.begin();
+
+        vector<int> frontier;
+        frontier.push_back(pos);
+        n=0;
+        c++;
+
+        while(frontier.size() > 0){
+            if(visited[frontier.back()] == 0){
+                visited[frontier.back()] = c;
+                n++;
+                frontier.insert(frontier.begin(), network[frontier.back()].begin(), network[frontier.back()].end());
+            }
+            frontier.pop_back();
+        }
+        /*
+        if(n>10){
+            cout << "c: " << c << " size: " << n << endl;
+        }
+        */
+    }
+    //cout << "c: " << c << endl;
+    //cout << "n: " << n << endl;
+    return nodes == n;
+}
 
 GiantCompSize::GiantCompSize(){
     vector<vector<int>> sr_mat;
 }
 
+vector<double> Network::getNeighborDegreeAvg(){
+    vector<double> degree(int(pow(nodes, 0.5))+1);
+    vector<double> degree_count(int(pow(nodes, 0.5))+1);
+    fill(degree.begin(), degree.end(), 0.0);
+    fill(degree_count.begin(), degree_count.end(), 0.0);
+    
+    for(int n=0; n<network.size(); n++){
+        double avg = 0;
+        degree_count[network[n].size()]++;
+        for(int i=0; i<network[n].size(); i++){
+            avg += network[network[n][i]].size();
+        }
+        degree[network[n].size()] += avg / (double) network[n].size();
+    }
+    for(int i=0; i<degree.size(); i++){
+        //cout << degree[i] << " -> " << degree_count[i] << endl;
+        if (degree_count[i] == 0){
+            degree[i] = 0.0;
+        }
+        else{
+            degree[i] = degree[i] / degree_count[i];
+        }
+    }
+
+    return degree;
+}
+
+void GiantCompSize::printNeighborDegreeAvg(int net_num, int net_size, char type, float param1, float param2){
+    vector<vector<double>> result;
+    float avg_k2_k = 0;
+    for(int i=0; i<net_num; i++){
+        Network net = Network(net_size);
+        net.generatePowerLawDegreeSequence(param1);
+        net.matchStubs();
+        net.removeSelfMultiEdges();
+        result.push_back(net.getNeighborDegreeAvg());
+        avg_k2_k += net.getSecondOrderMoment()  / net.getDegreeDistMean();
+    }
+    avg_k2_k = avg_k2_k / net_num;
+    cout << "avg k2 k2 = " << avg_k2_k << endl;
+
+    vector<vector<double>> result_t = this->transpose(result);
+    vector<double> avg_result;
+    for(int i=0; i<result_t.size(); i++){
+        avg_result.push_back(this->average(result_t[i]));
+    }
+
+    for(double r: avg_result){
+        cout << r << ",";
+    }
+    cout << endl;
+}
+
 void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float param1, float param2){
     vector<vector<int>> sr_matrix; 
+    double avgsize = 0;
+    
     for(int i=0; i<net_num; i++){
         Network net = Network(net_size);
         switch (type){
@@ -408,11 +499,18 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, float
         //cout << "average degree: " << net.getDegreeDistMean() << endl;
         net.matchStubs();
         net.removeSelfMultiEdges();
+        //net.printExcessDegreeAvg();
         //cout << net.getDegreeDistMean() << endl;
+        //cout << "connection: " << net.isConnected() << endl;
+        //net.rewire(100000);
+        //cout << "connection: " << net.isConnected() << endl;
+        cout << i << endl;
+        avgsize += net.getGiantClusterSize();
         net.generateUniformOrder();
         net.nodePercolation();
         sr_matrix.push_back(net.getSr());
     }
+    cout << "avg max size: " << avgsize / net_num << endl;
     sr_mat = sr_matrix;
 }
 
@@ -422,11 +520,12 @@ vector<double> GiantCompSize::computeAverageGiantClusterSize(int bins){
     for(int i=0; i<sr_mat_t.size(); i++){
         avg_sr.push_back(this->average(sr_mat_t[i]));
     }
+
     vector<double> result;
 
     for(int i=0; i<bins; i++){
         double tmp = 0;
-        for(int r=0; r<avg_sr.size()+1; r++){
+        for(int r=0; r<avg_sr.size(); r++){
             tmp += bin_pmf[i][r]*avg_sr[r];
         }
         result.push_back(tmp);
@@ -466,6 +565,11 @@ void GiantCompSize::loadBinomialPMF(string path){
                         }
                 }
                 else{
+                    try{
+                        row.push_back(stod(line));}
+                        catch (out_of_range){
+                            cout << "out of range " << line << endl;
+                    }
                     break;
                 }
             }
@@ -494,7 +598,7 @@ vector<double> GiantCompSize::getBinomialPMF(float phi, int nodes){
 }
 
 vector<vector<int>> GiantCompSize::transpose(vector<vector<int>> data){
-    vector<vector<int> > result(data[0].size(), vector<int>(data.size()));
+    vector<vector<int>> result(data[0].size(), vector<int>(data.size()));
     for (vector<int>::size_type i = 0; i < data[0].size(); i++) 
         for (vector<int>::size_type j = 0; j < data.size(); j++) {
             result[i][j] = data[j][i];
@@ -502,6 +606,19 @@ vector<vector<int>> GiantCompSize::transpose(vector<vector<int>> data){
     return result;
 }
 
+vector<vector<double>> GiantCompSize::transpose(vector<vector<double>> data){
+    vector<vector<double>> result(data[0].size(), vector<double>(data.size()));
+    for (vector<double>::size_type i = 0; i < data[0].size(); i++) 
+        for (vector<double>::size_type j = 0; j < data.size(); j++) {
+            result[i][j] = data[j][i];
+        }
+    return result;
+}
+
 double GiantCompSize::average(vector<int> data){
     return reduce(data.begin(), data.end()) / (double)data.size();
+}
+
+double GiantCompSize::average(vector<double> data){
+    return reduce(data.begin(), data.end()) / (double) (data.size()-count(data.begin(), data.end(), 0));//data.size();
 }

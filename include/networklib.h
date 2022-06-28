@@ -75,7 +75,15 @@ class Network{
 
         void generateUniformOrder();
 
-        void rewire(float p);
+        bool isConnected();
+
+        int getGiantClusterSize();
+
+        vector<double> getNeighborDegreeAvg();  
+
+        float getSecondOrderMoment();
+
+        void generateHighestDegreeFirstOrder();
 
     protected:
 
@@ -114,6 +122,8 @@ class GiantCompSize{
 
         void loadBinomialPMF(string path);
 
+        void printNeighborDegreeAvg(int net_num, int net_size, char type, float param1, float param2);
+
     protected:
 
         /** Computes the average size of the giant component for a given value of the occupation probability
@@ -138,11 +148,15 @@ class GiantCompSize{
         */
         vector<vector<int>> transpose(vector<vector<int>> data);
 
+        vector<vector<double>> transpose(vector<vector<double>> data);
+
         /** Computes the average of a vector
         * @param data input vector
         * @return average value of the input vector
         */
         double average(vector<int> data);
+
+        double average(vector<double> data);
 
         vector<vector<int>> sr_mat;
 

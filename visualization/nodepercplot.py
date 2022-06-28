@@ -1,5 +1,4 @@
 import csv
-from socket import getfqdn
 import numpy as np
 
 from scipy import optimize
@@ -25,21 +24,25 @@ def binomialanalyticalsolution(phy, n, p, upper_limit=50):
     return phy*(1-sum([binom.pmf(k, n, p)*(sol**k) for k in range(0, upper_limit)])) #15.2
 
 def powerlawanalyticalsolution(phy, alpha, n):
+    print(phy)
+
+    C = sum([ks**(-alpha) for ks in range(2, int(n)+1)])
 
     def powerlawpmf(k):
-        C = sum([ks**(-alpha) for ks in range(1, int(n**0.5)+1)])
         return (k**(-alpha))/C
 
-    mean = sum([k*powerlawpmf(k) for k in range(1, int(n**0.5)+1)])
-    #print(mean)
+    mean = sum([k*powerlawpmf(k) for k in range(2, int(n)+1)])
+    print(n, mean)
     
     def g1(u):
-        return sum([(k+1)*powerlawpmf(k+1)*(u**k) for k in range(0, int(n**0.5))])/mean
+        return sum([(k+1)*powerlawpmf(k+1)*(u**k) for k in range(1, int(n))])/mean
 
     def fun(u): #15.3 15.4 15.5
-        return u-1+phy-(phy)*g1(u)
+        return 1-phy+(phy)*g1(u) - u
 
     sol = optimize.root(fun, 0)
+    sol2 = optimize.root(fun, 0.5)
+    print(sol.x, sol2.x)
 
     if sol.success:
         sol = sol.x
@@ -47,11 +50,11 @@ def powerlawanalyticalsolution(phy, alpha, n):
         raise AssertionError
 
     def g0(u):
-        return sum([powerlawpmf(k)*(u**k) for k in range(1, int(n**0.5)+1)])
+        return sum([powerlawpmf(k)*(u**k) for k in range(2, int(n)+1)])
     return phy*(1-g0(sol)) #15.2
 
 def main():
-    with open("./experiments/config.yaml") as file:
+    with open("./experiments/test.yaml") as file:
         config_params = yaml.load(file, Loader=yaml.FullLoader)
         #print(config_params)
 
@@ -60,7 +63,7 @@ def main():
             #header = next(csv.reader(file))
             row = next(csv.reader(file))
 
-        x = np.arange(0, 1, 1/len(row))
+        x = np.arange(0, 1+1/len(row), 1/(len(row)-1))
         row = [float(i)/int(exp_params['network_size']) for i in row] #convert to float and normalize
         if exp_params['network_type'] == 'u':
             legend = "n={}, runs={}; degree dist.: U({}, {})".format(exp_params['network_size'],
@@ -77,7 +80,7 @@ def main():
             legend = "n={}, runs={}; degree dist.: p({})".format(exp_params['network_size'],
                                                                  exp_params['runs'],
                                                                  exp_params['param1'])
-            truth = [powerlawanalyticalsolution(i, exp_params['param1'], exp_params['network_size']) for i in x]
+            truth = [powerlawanalyticalsolution(i, exp_params['param1'], exp_params['network_size']**0.5) for i in x]
 
 
 
@@ -97,4 +100,23 @@ def main():
 
 
 if __name__ == '__main__':
+    """
+    x = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9]
+    exp = [21.79/100, 420.93/1000, 5011.12/10000, 52596.1/100000]
+    exp_bfs = [21.79/100, 420.93/1000, 5011.12/10000, 52596.1/100000]
+    real = [powerlawanalyticalsolution(1, 2.5, i) for i in x[:4]]
+    real_sqrt = [powerlawanalyticalsolution(1, 2.5, i**0.5) for i in x]
+    plt.plot(x[:len(exp)], exp, marker='o', fillstyle='none', label="simulation result (Newman)")
+    plt.plot(x[:len(exp_bfs)], exp_bfs, marker='o', fillstyle='none', label="simulation result (BFS)")
+    plt.plot(x, real_sqrt, marker='o', fillstyle='none', label="analytical solution cutoff=sqrt(n)")
+    plt.plot(x[:4], real, marker='o', fillstyle='none', label="analytical solution cutoff=n")
+
+    plt.xscale('log')
+    plt.legend()
+    plt.xlabel("number of nodes")
+    plt.ylabel("Size of giant cluster S(φ=1)")
+    plt.grid()
+    plt.title("analytical vs simulation: scale free alpha=2.5, φ=1, runs=100")
+    plt.show()
+    """
     main()
