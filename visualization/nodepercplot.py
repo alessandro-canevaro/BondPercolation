@@ -40,13 +40,27 @@ def binomialanalyticalsolution(phy, n, p, upper_limit=50):
         return u-1+phy-(phy/(n*p))*sum([(k+1)*binom.pmf(k+1, n, p)*(u**k) for k in range(0, upper_limit)])
 
     sol = optimize.root(fun, 0.5)
-    print(phy, sol.success)
+    #print(phy, sol.success)
     if sol.success:
         sol = sol.x
     else:
         raise AssertionError
 
     return phy*(1-sum([binom.pmf(k, n, p)*(sol**k) for k in range(0, upper_limit)])) #15.2
+
+def bondbinomialanalyticalsolution(phy, n, p, upper_limit=50):
+    #print(binom.pmf(1, n, p))
+    def fun(u): #15.3 15.4 15.5
+        return u-1+phy-(phy/(n*p))*sum([(k+1)*binom.pmf(k+1, n, p)*(u**k) for k in range(0, upper_limit)])
+
+    sol = optimize.root(fun, 0.5)
+    #print(phy, sol.success)
+    if sol.success:
+        sol = sol.x
+    else:
+        raise AssertionError
+
+    return (1-sum([binom.pmf(k, n, p)*(sol**k) for k in range(0, upper_limit)]))
 
 def powerlawanalyticalsolution(phy, alpha, n, min_cutoff=2):
     #print(phy)
@@ -118,6 +132,30 @@ def targetedattackplot(exp_n, exp_params, row):
     plt.savefig("./results/figures/node_perc_giant_cluster_exp_{}.png".format(exp_n))
     plt.close()
 
+def linkpercolation(exp_n, exp_params, row):
+    x = np.arange(0, 1+1/len(row), 1/(len(row)-1))
+    legend = "n={}, runs={};\ndegree dist.: Bin({}, {})".format(exp_params['network_size'],
+                                                                       exp_params['runs'],
+                                                                       exp_params['param1'],
+                                                                       exp_params['param2'])
+    truth = [bondbinomialanalyticalsolution(i, exp_params['param1'], exp_params['param2']) for i in x]
+    truth2 = [binomialanalyticalsolution(i, exp_params['param1'], exp_params['param2']) for i in x]
+
+    plt.plot(x, row, marker='o', fillstyle='none', linestyle='none', label=legend)
+    plt.plot(x, truth, label="Analytical sol. - bond perc.")
+    plt.plot(x, truth2, linestyle='dashed', label="Analytical sol. - site perc.")
+
+    plt.xlim((-0.1, 1.1))
+    plt.ylim((-0.1, 1.1))
+    plt.title("Average size of the largest cluster as a function of φ")
+    plt.legend(loc='lower right')
+    plt.xlabel("Occupation probability φ")
+    plt.ylabel("Size of giant cluster S(φ)")
+    plt.grid(True)
+    #plt.show()
+    plt.savefig("./results/figures/node_perc_giant_cluster_exp_{}.png".format(exp_n))
+    plt.close()
+
 def main():
     with open("./experiments/test.yaml") as file:
         config_params = yaml.load(file, Loader=yaml.FullLoader)
@@ -130,9 +168,13 @@ def main():
 
         x = np.arange(0, 1+1/len(row), 1/(len(row)-1))
         row = [float(i)/int(exp_params['network_size']) for i in row] #convert to float and normalize
-        if exp_params['attack_type'] == 't':
+        if exp_params['percolation_type'] == 't':
             targetedattackplot(exp_n, exp_params, row)
             return 
+
+        if exp_params['percolation_type'] == 'l':
+            linkpercolation(exp_n, exp_params, row)
+            return
 
         if exp_params['network_type'] == 'u':
             legend = "n={}, runs={}; degree dist.: U({}, {})".format(exp_params['network_size'],

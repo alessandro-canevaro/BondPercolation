@@ -88,7 +88,7 @@ void Network::generateBinomialDegreeSequence(int n, float p){
         }
         sum = accumulate(degree_sequence.begin(), degree_sequence.end(), 0);
     }
-
+    //cout << "M = " << accumulate(degree_sequence.begin(), degree_sequence.end(), 0) / 2 << endl;
     sequence = degree_sequence;
 }
 
@@ -465,6 +465,159 @@ vector<double> Network::getNeighborDegreeAvg(){
     return degree;
 }
 
+void Network::equalizeEdgeNumber(int M){
+    //cout << "target M " << M << endl;
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> distrib(0, nodes-1);
+
+    int current_M = 0;
+    vector<vector<int>> net = network;
+    for(vector<int> n: network){
+        current_M += n.size();
+    }
+    current_M = current_M / 2;
+    int n1, n2;
+
+    while(current_M > M){
+        n1 = distrib(gen);
+        if(net[n1].size() == 0){
+            continue;
+        }
+        n2 = net[n1][0];
+        net[n1].erase(net[n1].begin() + 0);
+        net[n2].erase(find(net[n2].begin(), net[n2].end(), n1));
+        current_M--;
+    }
+
+    while(current_M < M){
+        while(true){
+            n1 = distrib(gen);
+            n2 = distrib(gen);
+            if(n1 != n2){
+                if(find(net[n1].begin(), net[n1].end(), n2) == net[n1].end()){
+                    break;
+                }
+            }
+        }
+        net[n1].push_back(n2);
+        net[n2].push_back(n1);
+        current_M++;
+    }
+
+    network = net;
+
+    current_M = 0;
+    for(vector<int> n: network){
+        current_M += n.size();
+    }
+    current_M = current_M / 2;
+    //cout << "M after: " << current_M << endl;
+}
+
+void Network::linkPercolation(){
+    vector<int> labels(nodes);
+    fill(labels.begin(), labels.end(), -1);
+
+    vector<vector<int>> net(nodes); //contains nodes
+    vector<int> cluster_size(nodes); //contains labels to size
+    fill(cluster_size.begin(), cluster_size.end(), 0);
+    int new_label = 0;
+
+    vector<int> result;
+    result.push_back(0); //phy=0 -> no nodes
+    int max_size = 2;
+
+    for(vector<int> e: edge_order){
+        net[e[0]].push_back(e[1]);
+        net[e[1]].push_back(e[0]);
+        //cout << "considering edge between: " << e[0] << " - " << e[1] << endl;
+
+        if(labels[e[0]] == -1 && labels[e[1]] == -1){ //both nodes are new
+            //cout << "both nodes are not present, marking them with label: " << new_label << endl;
+            labels[e[0]] = new_label;
+            labels[e[1]] = new_label;
+            cluster_size[new_label] += 2; //always smaller then max_size
+            new_label++;
+        } 
+        else if(labels[e[0]] == -1){
+            //cout << "label of node e[0]" << e[0] << " is -1; changed to " << labels[e[1]] << endl;
+            labels[e[0]] = labels[e[1]];
+            cluster_size[labels[e[1]]]++;
+
+            if(cluster_size[labels[e[1]]] > max_size){
+                max_size = cluster_size[labels[e[1]]];
+            }
+        }
+        else if(labels[e[1]] == -1){
+            //cout << "label of node e[1]" << e[1] << " is -1; changed to " << labels[e[0]] << endl;
+            labels[e[1]] = labels[e[0]];
+            cluster_size[labels[e[0]]]++;
+
+            if(cluster_size[labels[e[0]]] > max_size){
+                max_size = cluster_size[labels[e[0]]];
+            }
+        }
+        else if(labels[e[0]] != labels[e[1]]){
+            //relabel
+            int lab;
+            vector<int> frontier;
+            if(cluster_size[labels[e[0]]] < cluster_size[labels[e[1]]]){
+                lab = labels[e[1]];
+                frontier.push_back(e[0]);
+            }
+            else{
+                lab = labels[e[0]];
+                frontier.push_back(e[1]);
+            }
+            //cout << "relabiling nodes from " << frontier.back() << " with label " << lab << endl; 
+
+            cluster_size[lab] += cluster_size[labels[frontier.back()]];
+            cluster_size[labels[frontier.back()]] = 0;
+            if(cluster_size[lab] > max_size){
+                max_size = cluster_size[lab];
+            }
+
+            while (frontier.size() > 0){
+                if(labels[frontier.back()] != lab){
+                    labels[frontier.back()] = lab;
+                    frontier.insert(frontier.begin(), net[frontier.back()].begin(), net[frontier.back()].end());
+                }
+                frontier.pop_back();
+            }
+        
+        }
+        //cout << "max size " << max_size << endl;
+        result.push_back(max_size);
+    }
+
+    se = result;
+}
+
+vector<int> Network::getSe(){
+    return se;
+}
+
+void Network::generateUniformEdgeOrder(){
+    random_device rd;
+    mt19937 gen(rd());
+
+    vector<vector<int>> order;
+    for(int n1 = 0; n1<network.size(); n1++){
+        for(int n2: network[n1]){
+            if(n2 > n1){
+                order.push_back({n1, n2});
+            }
+        }
+    }
+    shuffle(order.begin(), order.end(), gen);
+    edge_order = order;
+    //for(vector<int> e: edge_order){
+    //    cout << e[0] << " - " << e[1] << endl;
+    //}
+}
+
+
 GiantCompSize::GiantCompSize(){
     vector<vector<int>> sr_mat;
     vector<vector<int>> sk_mat;
@@ -496,7 +649,7 @@ void GiantCompSize::printNeighborDegreeAvg(int net_num, int net_size, char type,
     cout << endl;
 }
 
-void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char attack_type, float param1, float param2){
+void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char percolation_type, float param1, float param2){
     vector<vector<int>> sr_matrix; 
     vector<vector<int>> sk_matrix;
     double avgsize = 0;
@@ -520,21 +673,24 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char 
         //cout << i << endl;
         //avgsize += net.getGiantClusterSize();
 
-        if(attack_type == 't'){
+        if(percolation_type == 't'){
             net.generateHighestDegreeFirstOrder();
+            net.nodePercolation();
+            sk_matrix.push_back(net.getSasfunctionofK(20));
+        }
+        else if(percolation_type == 'l'){
+            net.equalizeEdgeNumber(param1*param2*net_size*0.5);
+            //net.printNetwork();
+            net.generateUniformEdgeOrder();
+            net.linkPercolation();
+            sr_matrix.push_back(net.getSe());
         }
         else{
             net.generateUniformOrder();
-        }
-
-        net.nodePercolation();
-
-        if(attack_type == 't'){
-            sk_matrix.push_back(net.getSasfunctionofK(20));
-        }
-        else{
+            net.nodePercolation();
             sr_matrix.push_back(net.getSr());
         }
+
     }
     //cout << "avg max size: " << avgsize / net_num << endl;
     sk_mat = sk_matrix;
@@ -554,11 +710,10 @@ vector<double> GiantCompSize::computeAverageGiantClusterSize(int bins){
     vector<vector<int>> sr_mat_t = this->transpose(sr_mat);
     vector<double> avg_sr;
     for(int i=0; i<sr_mat_t.size(); i++){
-        avg_sr.push_back(this->average(sr_mat_t[i]));
+        avg_sr.push_back(this->average(sr_mat_t[i], true));
     }
 
     vector<double> result;
-
     for(int i=0; i<bins; i++){
         double tmp = 0;
         for(int r=0; r<avg_sr.size(); r++){

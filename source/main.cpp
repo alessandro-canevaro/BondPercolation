@@ -66,14 +66,7 @@ void saveResults(string path, vector<double> data){
     }
 }
 
-int main(){
-
-    /*
-    Network net = Network("./data/edge_list.csv");
-    net.printNetwork();
-    net.rewire(0);
-    net.printNetwork();
-    */
+void percolation(){
     vector<vector<string>> exp_params = parseGiantCompConfigFile(CONFIG_FILE_PATH);
 
     for(int i=0; i<exp_params.size(); i++){
@@ -82,23 +75,42 @@ int main(){
         int runs = stoi(exp_params[i][0]);
         int network_size = stoi(exp_params[i][1]);
         char network_type = exp_params[i][2][1];
-        char attack_type = exp_params[i][3][1];
+        char percolation_type = exp_params[i][3][1];
         float param1 = stof(exp_params[i][4]);
         float param2 = stof(exp_params[i][5]);
-        cout << "runs: " << runs << ", size: " << network_size << ", type: " << network_type << ", attack: " << attack_type << ", p1: " << param1 << ", p2: " << param2 << endl;
+        cout << "runs: " << runs << ", size: " << network_size << ", type: " << network_type << ", percolation: " << percolation_type << ", p1: " << param1 << ", p2: " << param2 << endl;
 
+        vector<double> result;
         GiantCompSize gcs = GiantCompSize();
-        gcs.generateNetworks(runs, network_size, network_type, attack_type, param1, param2);
-        if(attack_type == 't'){
-            vector<double> result = gcs.computeAverageGiantClusterSizeAsFunctionOfK();
-            saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
+        gcs.generateNetworks(runs, network_size, network_type, percolation_type, param1, param2);
+        if(percolation_type == 't'){
+            result = gcs.computeAverageGiantClusterSizeAsFunctionOfK();
+        }
+        else if(percolation_type == 'l'){
+            int m = network_size*param1*param2*0.5;
+            gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(m)+"_b"+to_string(PLOT_BINS)+".csv");
+            result = gcs.computeAverageGiantClusterSize(PLOT_BINS);
         }
         else{
             gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv");
-            vector<double> result = gcs.computeAverageGiantClusterSize(PLOT_BINS);
-            saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
+            result = gcs.computeAverageGiantClusterSize(PLOT_BINS);
         }
+        saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
     }
+}
+
+int main(){
+    /*
+    Network net = Network(10);
+    net.generateBinomialDegreeSequence(10, 0.3);
+    net.matchStubs();
+    net.removeSelfMultiEdges();
+    net.equalizeEdgeNumber(10*0.3*10*0.5);
+    //net.printNetwork();
+    net.generateUniformEdgeOrder();
+    net.linkPercolation();
+    */
+    percolation();
     
     cout << endl << "all done" << endl;
     return 0;

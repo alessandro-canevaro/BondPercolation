@@ -87,6 +87,14 @@ class Network{
 
         vector<int> getSasfunctionofK(int max_degree);
 
+        void linkPercolation();
+
+        vector<int> getSe();
+
+        void generateUniformEdgeOrder();
+
+        void equalizeEdgeNumber(int M);
+
     protected:
 
         int nodes;
@@ -94,6 +102,8 @@ class Network{
         vector<vector<int>> network;
         vector<int> node_order;
         vector<int> sr;
+        vector<int> se;
+        vector<vector<int>> edge_order;
 };
 
 /**
@@ -114,7 +124,7 @@ class GiantCompSize{
         * @param param1 first parameter passed to the degree sequence generating function
         * @param param2 second parameter passed to the degree sequence generating function
         */
-        void generateNetworks(int net_num, int net_size, char type, char attack_type, float param1, float param2);
+        void generateNetworks(int net_num, int net_size, char type, char percolation_type, float param1, float param2);
 
         /** Computes the average size of the giant component for a range of values of the occupation probability
         * @param bins the occupation probability range is splitted into bins values
