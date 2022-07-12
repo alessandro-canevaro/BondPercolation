@@ -2,7 +2,7 @@ import csv
 import numpy as np
 
 from scipy import optimize
-from scipy.stats import binom
+from scipy.stats import binom, poisson
 
 import matplotlib.pyplot as plt
 
@@ -51,6 +51,7 @@ def binomialanalyticalsolution(phy, n, p, upper_limit=50):
 def bondbinomialanalyticalsolution(phy, n, p, upper_limit=50):
     #print(binom.pmf(1, n, p))
     def fun(u): #15.3 15.4 15.5
+        #return u-1+phy-phy*u**2
         return u-1+phy-(phy/(n*p))*sum([(k+1)*binom.pmf(k+1, n, p)*(u**k) for k in range(0, upper_limit)])
 
     sol = optimize.root(fun, 0.5)
@@ -60,7 +61,70 @@ def bondbinomialanalyticalsolution(phy, n, p, upper_limit=50):
     else:
         raise AssertionError
 
+    #return 1 - sol**3
     return (1-sum([binom.pmf(k, n, p)*(sol**k) for k in range(0, upper_limit)]))
+
+def test(F0, n, p, upper_limit=50, mu=8):
+    phi = sum([binom.pmf(f, 20, 0.5) for f in range(0, F0)])
+    m = sum([binom.pmf(f, 20, 0.5)*f for f in range(0, upper_limit)])
+
+    def g0(z):
+        return sum([z**(k) * binom.pmf(k, n, p) for k in range(0, upper_limit)])
+
+    def g1(z):
+        return sum([z**(k-1) *k* binom.pmf(k, n, p) for k in range(1, upper_limit)]) / (n*p)
+
+    def fun(u):
+        return u - 1 + phi*(g1(1) - g1(u))
+        #return 1 - g1(1-u) - u
+
+    sol = optimize.root(fun, 0.5)
+    #print(F0, sol.x)
+    if sol.success:
+        sol = sol.x[0]
+    else:
+        sol= 0
+        print("error")
+        #raise AssertionError
+
+    
+    print(F0, phi, sol, g0(1), g0(sol))
+    if phi == 0:
+        return 0
+    return (g0(1) - g0(sol))
+
+
+    
+
+def featurebondanalyticalsolution(F0, n, p, upper_limit=50, mu=8):
+    phi = sum([poisson.pmf(f, 8) for f in range(0, F0)])
+    #print(binom.pmf(1, n, p))
+    def g0(z):
+        return phi * sum([binom.pmf(k, n, p)*(z**k) for k in range(0, upper_limit)]) 
+
+    mean = sum([poisson.pmf(f, 8) * sum([binom.pmf(k, n, p)*k for k in range(0, upper_limit)]) for f in range(0, 50)])
+
+    def g1(z):
+        return phi * sum([binom.pmf(k, n, p)*k*z**(k-1) for k in range(1, upper_limit)])  / (n*p)
+
+    def fun(u):
+        return u - 1 + g1(1) - g1(u)
+        #return 1 - g1(1-u) - u
+
+    sol = optimize.root(fun, 0.5)
+    #print(F0, sol.x)
+    if sol.success:
+        sol = sol.x[0]
+    else:
+        raise AssertionError
+
+    #print(g0(1-sol))
+    #return g0(1) - g0(sol)
+    #print(f0(1), f0(sol))
+
+    if phi == 0:
+        return 0
+    return (g0(1) - g0(sol)) / phi
 
 def powerlawanalyticalsolution(phy, alpha, n, min_cutoff=2):
     #print(phy)
@@ -156,6 +220,26 @@ def linkpercolation(exp_n, exp_params, row):
     plt.savefig("./results/figures/node_perc_giant_cluster_exp_{}.png".format(exp_n))
     plt.close()
 
+def featurebondperc(exp_n, exp_params, row):
+    x = np.arange(0, 20)
+
+    truth = [featurebondanalyticalsolution(i, exp_params['param1'],  exp_params['param2'], 50, 8) for i in x]
+
+    plt.plot(x, row, marker='x', fillstyle='none', linestyle='dashed', label="Simulation (runs={})".format(exp_params['runs']))
+    plt.plot(x, truth, marker='o', fillstyle='none', label="Analytical sol. - bond perc.")
+    #plt.xlim((-0.1, 1.1))
+    plt.ylim((-0.1, 1.1))
+    plt.title("Average size of the largest cluster \n n={}, degree dist.: Bin(n={}, p={})".format(exp_params['network_size'], 
+                                                                                                exp_params['param1'],
+                                                                                                exp_params['param2']))
+    plt.legend(loc='upper left')
+    plt.xlabel("Feature F: Poisson(mu=8)")
+    plt.ylabel("Size of giant cluster S(φ)")
+    plt.grid(True)
+    #plt.show()
+    plt.savefig("./results/figures/node_perc_giant_cluster_exp_{}.png".format(exp_n))
+    plt.close()
+
 def main():
     with open("./experiments/test.yaml") as file:
         config_params = yaml.load(file, Loader=yaml.FullLoader)
@@ -174,6 +258,10 @@ def main():
 
         if exp_params['percolation_type'] == 'l':
             linkpercolation(exp_n, exp_params, row)
+            return
+
+        if exp_params['percolation_type'] == 'f':
+            featurebondperc(exp_n, exp_params, row)
             return
 
         if exp_params['network_type'] == 'u':

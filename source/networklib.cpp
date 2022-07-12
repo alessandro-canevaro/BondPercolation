@@ -74,13 +74,22 @@ void Network::generateUniformDegreeSequence(int a, int b){
     sequence = degree_sequence;
 }
 
+void Network::generateFixedDegreeSequence(int k){
+    vector<int> degree_sequence (nodes);
+    fill(degree_sequence.begin(), degree_sequence.end(), k);
+    if((k*nodes) % 2 != 0){
+        degree_sequence[0]++;
+    }
+    sequence = degree_sequence;
+}
+
 void Network::generateBinomialDegreeSequence(int n, float p){
     random_device rd;
     mt19937 gen(rd());
     binomial_distribution<> distrib(n, p);
 
     vector<int> degree_sequence (nodes);
-
+    //cout << n << " " << p << " " << nodes << " " << n*p << endl;
     int sum = 1;
     while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even
         for (int i=0; i<nodes; i++){
@@ -138,6 +147,7 @@ float Network::getDegreeDistMean(){
      //   cout << i << ",";
     //}
     //cout << endl;
+    cout << "size " << network.size() << endl;
     return avg/network.size();// - reduce(sequence.begin(), sequence.end()) / (float)sequence.size();
 }
 
@@ -150,7 +160,6 @@ float Network::getSecondOrderMoment(){
     variance = variance / (float) network.size();
     return variance + pow(mean, 2);
 }
-
 
 void Network::matchStubs(){
     random_device rd;
@@ -617,6 +626,65 @@ void Network::generateUniformEdgeOrder(){
     //}
 }
 
+void Network::generateFeatureEdgeOrder(){
+    random_device rd;
+    mt19937 gen(rd());
+
+    vector<vector<int>> order;
+    for(int n1 = 0; n1<network.size(); n1++){
+        for(int n2: network[n1]){
+            if(n2 > n1){
+                order.push_back({n1, n2});
+            }
+        }
+    }
+    shuffle(order.begin(), order.end(), gen);
+
+    vector<int> features;
+    poisson_distribution<> d(8);
+    //binomial_distribution<> d(20, 0.5);
+    for(int i=0; i<order.size(); i++){
+        features.push_back(d(gen));
+    }
+
+    vector<int> indices(order.size());
+    iota(indices.begin(), indices.end(), 0);
+    sort(indices.begin(), indices.end(),
+           [&](int A, int B) -> bool {
+                return features[A] < features[B];
+            });
+    
+    vector<vector<int>> sorted_order;
+    vector<int> sorted_features;
+    for(int idx: indices){
+        //cout << order[idx][0] << " - " << order[idx][1] << "; F: " << features[idx] << endl;
+        sorted_order.push_back(order[idx]);
+        sorted_features.push_back(features[idx]);
+    }
+
+    feature_values = sorted_features;
+    edge_order = sorted_order;
+
+}
+
+vector<int> Network::getSasfunctionofF(int max_F){
+    vector<int> result(max_F);
+    fill(result.begin(), result.end(), 0);
+    int previous_f = feature_values[0];
+    result[previous_f] = se[0];
+    //cout << previous_f << " - " << se[0] << endl;
+    for(int i = 1; i<se.size(); i++){
+        if(previous_f < feature_values[i]){
+            previous_f = feature_values[i];
+            //cout << previous_f << ", ";
+            if(previous_f >= max_F){break;}
+            //cout << previous_f << " - " << se[i] << endl;
+            result[previous_f] = se[i];
+        }
+    }
+    //cout << "done" << endl;
+    return result;
+}
 
 GiantCompSize::GiantCompSize(){
     vector<vector<int>> sr_mat;
@@ -655,6 +723,7 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char 
     double avgsize = 0;
     
     for(int i=0; i<net_num; i++){
+        //cout << i << endl;
         Network net = Network(net_size);
         switch (type){
         case 'u':
@@ -667,9 +736,10 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char 
             net.generatePowerLawDegreeSequence(param1);
             break;
         }
-        //cout << "average degree: " << net.getDegreeDistMean() << endl;
         net.matchStubs();
         net.removeSelfMultiEdges();
+        //cout << net.getNetwork().size() << endl;
+        //cout << "average degree: " << net.getDegreeDistMean() << endl;
         //cout << i << endl;
         //avgsize += net.getGiantClusterSize();
 
@@ -684,6 +754,11 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char 
             net.generateUniformEdgeOrder();
             net.linkPercolation();
             sr_matrix.push_back(net.getSe());
+        }
+        else if(percolation_type == 'f'){
+            net.generateFeatureEdgeOrder();
+            net.linkPercolation();
+            sk_matrix.push_back(net.getSasfunctionofF(20));
         }
         else{
             net.generateUniformOrder();

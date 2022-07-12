@@ -22,6 +22,8 @@ class Network{
 
         Network(string path);
 
+        void generateFixedDegreeSequence(int k);
+
         /** Generates a degree sequence according to the uniform distribution
         * @param a lower limit of the uniform distribution
         * @param b upper limit of the uniform distribution
@@ -95,6 +97,10 @@ class Network{
 
         void equalizeEdgeNumber(int M);
 
+        void generateFeatureEdgeOrder();
+
+        vector<int> getSasfunctionofF(int max_f);
+
     protected:
 
         int nodes;
@@ -104,6 +110,7 @@ class Network{
         vector<int> sr;
         vector<int> se;
         vector<vector<int>> edge_order;
+        vector<int> feature_values;
 };
 
 /**

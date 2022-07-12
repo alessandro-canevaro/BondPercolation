@@ -3,6 +3,6 @@ giant_component:
     runs: 100
     network_size: 100000
     network_type: b
-    percolation_type: l
+    percolation_type: f
     param1: 100000
-    param2: 0.00004
+    param2: 0.00003

@@ -83,8 +83,13 @@ void percolation(){
         vector<double> result;
         GiantCompSize gcs = GiantCompSize();
         gcs.generateNetworks(runs, network_size, network_type, percolation_type, param1, param2);
-        if(percolation_type == 't'){
+        if(percolation_type == 't' || percolation_type == 'f'){
             result = gcs.computeAverageGiantClusterSizeAsFunctionOfK();
+            for(double r: result){
+                cout << r << ", ";
+            }
+            cout << endl;
+
         }
         else if(percolation_type == 'l'){
             int m = network_size*param1*param2*0.5;
@@ -100,16 +105,6 @@ void percolation(){
 }
 
 int main(){
-    /*
-    Network net = Network(10);
-    net.generateBinomialDegreeSequence(10, 0.3);
-    net.matchStubs();
-    net.removeSelfMultiEdges();
-    net.equalizeEdgeNumber(10*0.3*10*0.5);
-    //net.printNetwork();
-    net.generateUniformEdgeOrder();
-    net.linkPercolation();
-    */
     percolation();
     
     cout << endl << "all done" << endl;
