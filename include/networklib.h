@@ -30,6 +30,8 @@ class Network{
         */
         void generateUniformDegreeSequence(int a, int b);
 
+        void generateGeometricDegreeSequence(float p);
+
         /** Generates a degree sequence according to the binomial distribution
         * @param n number of trials
         * @param p success probability
@@ -63,7 +65,7 @@ class Network{
         /** Perform node percolation.
         * at each added node, it saves in the vetor sr the size of the largest cluster
         */
-        void nodePercolation();
+        void nodePercolation(bool small_comp = false);
 
         /** return the network as a vector of vectors containing the nodes and edges
         * @return network
@@ -74,6 +76,8 @@ class Network{
         * @return sr
         */
         vector<int> getSr();
+
+        vector<double> getSs();
 
         void generateUniformOrder();
 
@@ -99,6 +103,8 @@ class Network{
 
         void generateFeatureEdgeOrder();
 
+        void generateCorrFeatureEdgeOrder();
+
         vector<int> getSasfunctionofF(int max_f);
 
     protected:
@@ -109,6 +115,7 @@ class Network{
         vector<int> node_order;
         vector<int> sr;
         vector<int> se;
+        vector<double> ss; //small comp.
         vector<vector<int>> edge_order;
         vector<int> feature_values;
 };
@@ -138,6 +145,8 @@ class GiantCompSize{
         * @return vector of size bins containing the results for the diferrent values of the occupation probability
         */
         vector<double> computeAverageGiantClusterSize(int bins);
+
+        vector<double> computeBinomialAverage(int bins);
 
         vector<double> computeAverageGiantClusterSizeAsFunctionOfK();
 
@@ -182,6 +191,8 @@ class GiantCompSize{
         vector<vector<int>> sr_mat;
 
         vector<vector<int>> sk_mat;
+
+        vector<vector<double>> ss_mat;
 
         vector<vector<double>> bin_pmf;
 };

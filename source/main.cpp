@@ -83,7 +83,7 @@ void percolation(){
         vector<double> result;
         GiantCompSize gcs = GiantCompSize();
         gcs.generateNetworks(runs, network_size, network_type, percolation_type, param1, param2);
-        if(percolation_type == 't' || percolation_type == 'f'){
+        if(percolation_type == 't' || percolation_type == 'f' || percolation_type == 'c'){
             result = gcs.computeAverageGiantClusterSizeAsFunctionOfK();
             for(double r: result){
                 cout << r << ", ";
@@ -95,6 +95,10 @@ void percolation(){
             int m = network_size*param1*param2*0.5;
             gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(m)+"_b"+to_string(PLOT_BINS)+".csv");
             result = gcs.computeAverageGiantClusterSize(PLOT_BINS);
+        }
+        else if(percolation_type == 's'){
+            //gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv");
+            result = gcs.computeBinomialAverage(PLOT_BINS);
         }
         else{
             gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv");

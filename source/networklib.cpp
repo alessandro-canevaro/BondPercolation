@@ -101,6 +101,24 @@ void Network::generateBinomialDegreeSequence(int n, float p){
     sequence = degree_sequence;
 }
 
+void Network::generateGeometricDegreeSequence(float p){
+    random_device rd;
+    mt19937 gen(rd());
+    geometric_distribution<int> distrib(p);
+
+    vector<int> degree_sequence (nodes);
+    //cout << n << " " << p << " " << nodes << " " << n*p << endl;
+    int sum = 1;
+    while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even
+        for (int i=0; i<nodes; i++){
+            degree_sequence[i] = distrib(gen);
+        }
+        sum = accumulate(degree_sequence.begin(), degree_sequence.end(), 0);
+    }
+    //cout << "M = " << accumulate(degree_sequence.begin(), degree_sequence.end(), 0) / 2 << endl;
+    sequence = degree_sequence;
+}
+
 void Network::generatePowerLawDegreeSequence(float alpha){
     random_device rd;
     mt19937 gen(rd());
@@ -147,7 +165,7 @@ float Network::getDegreeDistMean(){
      //   cout << i << ",";
     //}
     //cout << endl;
-    cout << "size " << network.size() << endl;
+    //cout << "size " << network.size() << endl;
     return avg/network.size();// - reduce(sequence.begin(), sequence.end()) / (float)sequence.size();
 }
 
@@ -158,6 +176,7 @@ float Network::getSecondOrderMoment(){
         variance += pow(n.size()-mean, 2);
     }
     variance = variance / (float) network.size();
+    cout << variance << endl;
     return variance + pow(mean, 2);
 }
 
@@ -194,6 +213,12 @@ void Network::matchStubs(){
         }
     }
     //sequence = degree_sequence;
+    /*
+    shuffle(net.begin(), net.end(), gen);
+    for(int i=0; i<net.size(); i++){
+        shuffle(net[i].begin(), net[i].end(), gen);
+    }
+    */
     network = net;
 
 }
@@ -283,7 +308,11 @@ vector<int> Network::getSasfunctionofK(int max_degree){
     return result;
 }
 
-void Network::nodePercolation(){
+void Network::nodePercolation(bool small_comp){
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> distrib(0, nodes);
+
     vector<int> labels(nodes);
     fill(labels.begin(), labels.end(), -1);
 
@@ -291,10 +320,16 @@ void Network::nodePercolation(){
     vector<int> cluster_size(nodes); //contains labels to size
     fill(cluster_size.begin(), cluster_size.end(), 0);
     int new_label = 0;
+    int giant_cluster_label = new_label;
 
     vector<int> result;
     result.push_back(0); //phy=0 -> no nodes
     int max_size = 1;
+
+    vector<double> small_result;
+    small_result.push_back(0);
+
+    int node_count = 0;
 
     for(int n: node_order){
         //cout << "node: " << n << endl;
@@ -325,6 +360,7 @@ void Network::nodePercolation(){
                     cluster_size[labels[frontier.back()]] = 0;
                     if(cluster_size[lab] > max_size){
                         max_size = cluster_size[lab];
+                        giant_cluster_label = lab;
                     }
 
                     //cout << "lab: " << lab << endl;
@@ -345,22 +381,45 @@ void Network::nodePercolation(){
                 }
             }
         }
+
+        /*
+        vector<double> ps;
+        for(int i=1; i<11; i++){
+            int val = count(cluster_size.begin(), cluster_size.end(), i);
+            //cout << "found " << val << " cluster with size " << 1 << " ps: " << val*1/10000.0 << endl;
+            ps.push_back(val*i/(double) nodes);   
+        }
+        double ps_mean = 0;
+        for(int i=1; i<11; i++){
+            ps_mean += ps[i-1]*i;
+        }
+        ps_mean = ps_mean / accumulate(ps.begin(), ps.end(), 0.0);
+        small_result.push_back(ps_mean);
+        */
+        /*
+        int val = count(cluster_size.begin(), cluster_size.end(), 1);
+        small_result.push_back(val*1/(double) nodes);
+        */
         //cout << "max size: " << max_size << endl;
         result.push_back(max_size);
-        /*
-        cout << "labels: ";
-        for(int a: labels){
-            cout << a << ", ";
-        }
-        cout << endl;
-        cout << "size: ";
-        for(int b: cluster_size){
-            cout << b << ", ";
-        }
-        cout << endl;
-        */
     }
-    sr = result;
+
+    double tot = 0;
+    for(int i=1; i<1001; i++){
+        int val = count(cluster_size.begin(), cluster_size.end(), i);
+        //cout << "found " << val << " cluster with size " << i << " ps: " << val*i/100000.0 << endl;
+        tot += val*i/(double) (100000.0-max_size);
+        small_result.push_back(val*i/(double) (nodes-max_size));// << ", ";
+    }
+    cout << "total " << tot << endl;
+    
+
+    if(!small_comp){
+        ss = small_result;
+    }
+    else{
+        sr = result;
+    }
 }
 
 int Network::getGiantClusterSize(){
@@ -406,6 +465,10 @@ vector<vector<int>> Network::getNetwork(){
 
 vector<int> Network::getSr(){
     return sr;
+}
+
+vector<double> Network::getSs(){
+    return ss;
 }
 
 bool Network::isConnected(){
@@ -667,6 +730,73 @@ void Network::generateFeatureEdgeOrder(){
 
 }
 
+void Network::generateCorrFeatureEdgeOrder(){
+    random_device rd;
+    mt19937 gen(rd());
+
+    vector<vector<int>> order;
+    vector<int> tmp;
+    for(int n1 = 0; n1<network.size(); n1++){
+        for(int n2: network[n1]){
+            if(n2 > n1){
+                tmp = {n1, n2};
+                shuffle(tmp.begin(), tmp.end(), gen);
+                order.push_back(tmp);
+            }
+        }
+    }
+    //cout << order[300][0] <<" " <<order[300][1] << endl;
+    shuffle(order.begin(), order.end(), gen);
+    //cout << order[300][0] <<" " <<order[300][1] << endl;
+    vector<int> features;
+    int k1, k2;
+
+    /*
+    vector<double> intervals;
+    vector<double> weights = {0.00298132, 0.0147078, 0.0408772, 0.0911621, 0.12548, 0.160859, 0.160859, 0.138797, 0.106135, 0.0711541, 0.0411422, 0.0231218, 0.0122565, 0.00642639, 0.00258381, 0.000795018, 0.00046376, 0.00006625155, 0.000132503};
+    for(int i=2; i < 20 +1; i++){
+        intervals.push_back((double) i);
+        //weights.push_back(pow(i, -alpha));
+        //c += pow(i, -alpha);
+    }
+    piecewise_constant_distribution<double> distribution(intervals.begin(), intervals.end(), weights.begin());
+    */
+
+    for(int i=0; i<order.size(); i++){
+        k1 = network[order[i][0]].size();
+        k2 = network[order[i][1]].size();
+        poisson_distribution<> d((k1+k2));
+        features.push_back(d(gen));
+        //features.push_back(k1+k2);//(int) distribution(gen));
+        //cout << "k1 " << k1 << ", k2 " << k2 << ", F: " << 50/(k1+k2) << endl;
+    }
+    
+    /*
+    for(int i=0; i<30; i++){
+        int counter = count(features.begin(), features.end(), i);
+        cout << "feature "<< i << ": " << counter/(double) features.size() << endl;
+    }
+    */
+    
+    vector<int> indices(order.size());
+    iota(indices.begin(), indices.end(), 0);
+    sort(indices.begin(), indices.end(),
+           [&](int A, int B) -> bool {
+                return features[A] < features[B];
+            });
+    
+    vector<vector<int>> sorted_order;
+    vector<int> sorted_features;
+    for(int idx: indices){
+        //cout << order[idx][0] << " - " << order[idx][1] << "; k1: " << network[order[idx][0]].size() << "; k2: " << network[order[idx][1]].size()<< "; F: " << features[idx] << endl;
+        sorted_order.push_back(order[idx]);
+        sorted_features.push_back(features[idx]);
+    }
+
+    feature_values = sorted_features;
+    edge_order = sorted_order;
+}
+
 vector<int> Network::getSasfunctionofF(int max_F){
     vector<int> result(max_F);
     fill(result.begin(), result.end(), 0);
@@ -720,10 +850,11 @@ void GiantCompSize::printNeighborDegreeAvg(int net_num, int net_size, char type,
 void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char percolation_type, float param1, float param2){
     vector<vector<int>> sr_matrix; 
     vector<vector<int>> sk_matrix;
+    vector<vector<double>> ss_matrix;
     double avgsize = 0;
     
     for(int i=0; i<net_num; i++){
-        //cout << i << endl;
+        cout << i << endl;
         Network net = Network(net_size);
         switch (type){
         case 'u':
@@ -735,11 +866,18 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char 
         case 'p':
             net.generatePowerLawDegreeSequence(param1);
             break;
+        case 'f':
+            net.generateFixedDegreeSequence(param1);
+            break;
+        case 'g':
+            net.generateGeometricDegreeSequence(param1);
+            break;
         }
         net.matchStubs();
         net.removeSelfMultiEdges();
         //cout << net.getNetwork().size() << endl;
         //cout << "average degree: " << net.getDegreeDistMean() << endl;
+        //cout << "second order moment:" << net.getSecondOrderMoment() << endl;
         //cout << i << endl;
         //avgsize += net.getGiantClusterSize();
 
@@ -760,6 +898,17 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char 
             net.linkPercolation();
             sk_matrix.push_back(net.getSasfunctionofF(20));
         }
+        else if(percolation_type == 'c'){
+            //net.equalizeEdgeNumber(param1*param2*net_size*0.5);
+            net.generateCorrFeatureEdgeOrder();
+            net.linkPercolation();
+            sk_matrix.push_back(net.getSasfunctionofF(20));
+        }
+        else if(percolation_type == 's'){
+            net.generateUniformOrder();
+            net.nodePercolation();
+            ss_matrix.push_back(net.getSs());
+        }
         else{
             net.generateUniformOrder();
             net.nodePercolation();
@@ -770,6 +919,7 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char 
     //cout << "avg max size: " << avgsize / net_num << endl;
     sk_mat = sk_matrix;
     sr_mat = sr_matrix;
+    ss_mat = ss_matrix;
 }
 
 vector<double> GiantCompSize::computeAverageGiantClusterSizeAsFunctionOfK(){
@@ -793,6 +943,25 @@ vector<double> GiantCompSize::computeAverageGiantClusterSize(int bins){
         double tmp = 0;
         for(int r=0; r<avg_sr.size(); r++){
             tmp += bin_pmf[i][r]*avg_sr[r];
+        }
+        result.push_back(tmp);
+    }
+    return result;
+}
+
+vector<double> GiantCompSize::computeBinomialAverage(int bins){
+    vector<vector<double>> ss_mat_t = this->transpose(ss_mat);
+    vector<double> avg_ss;
+    for(int i=0; i<ss_mat_t.size(); i++){
+        avg_ss.push_back(this->average(ss_mat_t[i]));
+    }
+    return avg_ss;
+    vector<double> result;
+    for(int i=0; i<bins; i++){
+        double tmp = 0;
+        for(int r=0; r<avg_ss.size(); r++){
+            //cout << tmp << ", " <<bin_pmf[i][r] << ", "<< avg_ss[r] << ", "<< bin_pmf[i][r]*avg_ss[r] << endl;
+            tmp += bin_pmf[i][r]*avg_ss[r];
         }
         result.push_back(tmp);
     }
@@ -895,5 +1064,9 @@ double GiantCompSize::average(vector<int> data, bool all){
 }
 
 double GiantCompSize::average(vector<double> data){
-    return reduce(data.begin(), data.end()) / (double) (data.size()-count(data.begin(), data.end(), 0));//data.size();
+    double sum = (double) data.size()-count(data.begin(), data.end(), 0);
+    if(sum == 0){
+        return 0;
+    }
+    return reduce(data.begin(), data.end()) / sum; //(double) data.size();//
 }
