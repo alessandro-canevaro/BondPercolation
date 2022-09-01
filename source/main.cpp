@@ -83,7 +83,7 @@ void percolation(){
         vector<double> result;
         GiantCompSize gcs = GiantCompSize();
         gcs.generateNetworks(runs, network_size, network_type, percolation_type, param1, param2);
-        if(percolation_type == 't' || percolation_type == 'f' || percolation_type == 'c'){
+        if(percolation_type == 't' || percolation_type == 'f' || percolation_type == 'c' || percolation_type == 'e'){
             result = gcs.computeAverageGiantClusterSizeAsFunctionOfK();
             for(double r: result){
                 cout << r << ", ";
@@ -109,7 +109,19 @@ void percolation(){
 }
 
 int main(){
-    percolation();
+    
+    Network net = Network("./data/results/1930s/edgelist_level_0.txt");
+    net.removeSelfMultiEdges();
+    //net.printNetwork();
+    net.linkPercolation();
+    vector<int> result = net.getSasfunctionofF(100);
+    for(int r: result){
+        cout << r << ", ";
+    }
+
+    
+    
+    //percolation();
     
     cout << endl << "all done" << endl;
     return 0;

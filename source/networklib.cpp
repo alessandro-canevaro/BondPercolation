@@ -12,6 +12,7 @@
 #include <numeric>
 #include <sstream>
 #include <algorithm>
+#include <math.h>
 #include <../include/networklib.h>
 
 using namespace std;
@@ -23,17 +24,16 @@ Network::Network(int n){
 }
 
 Network::Network(string path){
-    vector<int> v1, v2;
-    string line;
+    vector<int> v1, v2, f;
+    vector<vector<int>> order;
     ifstream myfile (path);
-
+    int source, target, value;
     if (myfile.is_open()){
-        while (getline(myfile, line)){
-            vector<string> params_value(2);
-            string str1 = line.substr(0, line.find(','));
-            string str2 = line.substr(line.find(',')+1, line.size());
-            v1.push_back(stoi(str1));
-            v2.push_back(stoi(str2));
+        while (myfile >> source >> target >> value){
+            v1.push_back(source);
+            v2.push_back(target);
+            order.push_back({source, target});
+            f.push_back(value);
         }
         myfile.close();
     }
@@ -54,6 +54,24 @@ Network::Network(string path){
         net[v2[i]].push_back(v1[i]);
     }
     network = net;
+
+    vector<int> indices(order.size());
+    iota(indices.begin(), indices.end(), 0);
+    sort(indices.begin(), indices.end(),
+           [&](int A, int B) -> bool {
+                return f[A] < f[B];
+            });
+    
+    vector<vector<int>> sorted_order;
+    vector<int> sorted_features;
+    for(int idx: indices){
+        //cout << order[idx][0] << " - " << order[idx][1] << "; F: " << f[idx] << endl;
+        sorted_order.push_back(order[idx]);
+        sorted_features.push_back(f[idx]);
+    }
+
+    feature_values = sorted_features;
+    edge_order = sorted_order;
 }
 
 void Network::generateUniformDegreeSequence(int a, int b){
@@ -600,7 +618,7 @@ void Network::linkPercolation(){
     result.push_back(0); //phy=0 -> no nodes
     int max_size = 2;
 
-    for(vector<int> e: edge_order){
+    for(vector<int> e: edge_order){ //edge_order_temporal
         net[e[0]].push_back(e[1]);
         net[e[1]].push_back(e[0]);
         //cout << "considering edge between: " << e[0] << " - " << e[1] << endl;
@@ -797,21 +815,92 @@ void Network::generateCorrFeatureEdgeOrder(){
     edge_order = sorted_order;
 }
 
+vector<vector<int>> Network::GenerateTemporalFeatures(){
+    vector<vector<int>> functions;
+    int max_t = 10;
+    int min_f = 0;
+    int max_f = 20;
+    double A = 10.0;
+    double k = 10.0;
+
+    for(int i=min_f; i<=max_f; i++){
+        vector<int> func;
+        for(int j=0; j<=max_t; j++){
+            double phi = asin((i-k)/A);
+            double f = A*sin(2*3.1415*j/10.0 + phi)+k;
+            //cout << "F0: " << i << " t: " << j << " f: " << round(f) << endl;
+            func.push_back((int) f);
+        }
+        functions.push_back(func);
+    }
+    return functions;
+}
+
+vector<vector<int>> Network::ExtendTemporalFeatures(){
+    vector<vector<int>> func = this->GenerateTemporalFeatures();
+    vector<vector<int>> result;
+
+    for(int i=0; i<feature_values.size(); i++){
+        //cout << "F0: " << feature_values[i] << " extended: ";
+        //for(int j: func[feature_values[i]]){
+        //    cout << j << ", ";
+        //}
+        //cout << endl;
+        result.push_back(func[feature_values[i]]);
+    }
+    return result;
+}
+
+vector<vector<int>> Network::GetTemporalEdgeOrder(int t){
+    vector<vector<int>> extended = this->ExtendTemporalFeatures();
+    vector<int> new_features;
+    for(int i =0; i<extended.size(); i++){
+        new_features.push_back(extended[i][t]);
+    }
+
+    vector<int> indices(new_features.size());
+    iota(indices.begin(), indices.end(), 0);
+    sort(indices.begin(), indices.end(),
+           [&](int A, int B) -> bool {
+                return new_features[A] < new_features[B];
+            });
+    
+    vector<vector<int>> sorted_order;
+    vector<int> sorted_features;
+    for(int idx: indices){
+        //cout << edge_order[idx][0] << " - " << edge_order[idx][1] << "; F: " << new_features[idx] << endl;
+        sorted_order.push_back(edge_order[idx]);
+        sorted_features.push_back(new_features[idx]);
+    }
+    
+    //feature_values = sorted_features;
+    edge_order_temporal = sorted_order;
+    return sorted_order;
+}
+
 vector<int> Network::getSasfunctionofF(int max_F){
     vector<int> result(max_F);
     fill(result.begin(), result.end(), 0);
     int previous_f = feature_values[0];
     result[previous_f] = se[0];
-    //cout << previous_f << " - " << se[0] << endl;
+    //cout << previous_f << " - " << se[0] << " (i: " << 0 << ")" << endl;
     for(int i = 1; i<se.size(); i++){
         if(previous_f < feature_values[i]){
             previous_f = feature_values[i];
             //cout << previous_f << ", ";
             if(previous_f >= max_F){break;}
-            //cout << previous_f << " - " << se[i] << endl;
+            //cout << previous_f << " - " << se[i] << " (i: " << i << ")" << endl;
             result[previous_f] = se[i];
         }
     }
+
+    //zero hold
+    for(int i=1; i<result.size(); i++){
+        if(result[i] == 0){
+            result[i] = result[i-1];
+        }
+    }
+
     //cout << "done" << endl;
     return result;
 }
@@ -895,6 +984,16 @@ void GiantCompSize::generateNetworks(int net_num, int net_size, char type, char 
         }
         else if(percolation_type == 'f'){
             net.generateFeatureEdgeOrder();
+            net.linkPercolation();
+            sk_matrix.push_back(net.getSasfunctionofF(20));
+        }
+        else if(percolation_type == 'e'){
+            net.generateFeatureEdgeOrder();
+            int t = 9;
+            vector<vector<int>> tmp = net.GetTemporalEdgeOrder(t);
+            //for(int i=0; i<tmp.size(); i++){
+            //    cout << tmp[i][0] << " - " << tmp[i][1] << endl;
+            //}
             net.linkPercolation();
             sk_matrix.push_back(net.getSasfunctionofF(20));
         }

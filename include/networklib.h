@@ -107,6 +107,12 @@ class Network{
 
         vector<int> getSasfunctionofF(int max_f);
 
+        vector<vector<int>> GenerateTemporalFeatures();
+
+        vector<vector<int>> ExtendTemporalFeatures();
+
+        vector<vector<int>> GetTemporalEdgeOrder(int t);
+
     protected:
 
         int nodes;
@@ -117,6 +123,7 @@ class Network{
         vector<int> se;
         vector<double> ss; //small comp.
         vector<vector<int>> edge_order;
+        vector<vector<int>> edge_order_temporal;
         vector<int> feature_values;
 };
 

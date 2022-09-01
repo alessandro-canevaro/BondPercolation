@@ -1,8 +1,8 @@
 giant_component:
   0:
-    runs: 100
-    network_size: 100000
+    runs: 1
+    network_size: 1000
     network_type: b
-    percolation_type: c
-    param1: 100000
-    param2: 0.00003
+    percolation_type: e
+    param1: 1000
+    param2: 0.003
