@@ -59,7 +59,6 @@ void FeatureDistribution::generateTemporalFeatureDist(int mu){
     features = result;
 }
 
-
 vector<int> FeatureDistribution::getFeatures(int t){
     return features[t];
 }
@@ -70,6 +69,7 @@ void FeatureDistribution::getNet(){
         tmp.push_back(max(edge_list[i][0], edge_list[i][1]));
     }
     int nodes = *max_element(tmp.begin(), tmp.end());
+    nodes++; //count node 0
 
     vector<vector<int>> network(nodes);
     for(int i=0; i<num_edges; i++){
@@ -82,11 +82,6 @@ void FeatureDistribution::getNet(){
 
 void FeatureDistribution::ComputeTemporalFeature(int max_t, int min_f, int max_f, double A, double k){
     vector<vector<int>> func;
-    int max_t = 10;
-    int min_f = 0;
-    int max_f = 20;
-    double A = 10.0;
-    double k = 10.0;
 
     for(int i=min_f; i<=max_f; i++){
         vector<int> row;
