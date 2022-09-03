@@ -17,7 +17,7 @@ class FeatureDistribution{
 
         void generateTemporalFeatureDist(int mu);
 
-        vector<int> getFeatures(int t);
+        vector<int> getFeatures(int t=0);
         
     protected:
 

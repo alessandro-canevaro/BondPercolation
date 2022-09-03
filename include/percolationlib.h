@@ -10,7 +10,7 @@ using namespace std;
 class Percolation{
 
     public:
-        Percolation(vector<vector<int>> network);
+        Percolation(Network* network);
 
         vector<int> UniformNodeRemoval();
 
@@ -18,7 +18,7 @@ class Percolation{
 
         vector<int> UniformEdgeRemoval();
 
-        vector<int> FeatureEdgeRemoval();
+        vector<int> FeatureEdgeRemoval(int mu);
 
         vector<int> CorrFeatureEdgeRemoval();
 
@@ -26,12 +26,13 @@ class Percolation{
 
     protected:
 
-        void nodePercolation();
-        void edgePercolation();
+        void nodePercolation(vector<int> node_order);
+        void edgePercolation(vector<vector<int>> edge_order);
 
         random_device rd;
         mt19937 rand_gen;
         int nodes;
-        vector<vector<int>> network;
-        vector<vector<int>> edge_list;
+        Network *net;
+        FeatureDistribution *feat_dist;
+        vector<int> perc_results;
 };
