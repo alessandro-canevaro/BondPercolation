@@ -13,6 +13,12 @@
 
 using namespace std;
 
+Network::Network(Network &net){
+    network = net.getNetwork();
+    nodes = network.size();
+    edge_list = net.getEdgeList();
+}
+
 Network::Network(vector<int> degree_sequence){
     nodes = degree_sequence.size();
     this->matchStubs(degree_sequence);

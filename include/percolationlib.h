@@ -7,10 +7,12 @@
 
 using namespace std;
 
+class FeatureDistribution;
+
 class Percolation{
 
     public:
-        Percolation(Network* network);
+        Percolation(vector<vector<int>> network, vector<vector<int>> edge_list);
 
         vector<int> UniformNodeRemoval();
 
@@ -32,7 +34,8 @@ class Percolation{
         random_device rd;
         mt19937 rand_gen;
         int nodes;
-        Network *net;
-        FeatureDistribution *feat_dist;
+        vector<vector<int>> net;
+        vector<vector<int>> edges;
+        FeatureDistribution* feat_dist;
         vector<int> perc_results;
 };

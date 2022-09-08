@@ -15,5 +15,6 @@ target_link_libraries(main deg)
 target_link_libraries(main feat)
 target_link_libraries(main perc)
 target_link_libraries(perc net)
+target_link_libraries(perc feat)
 
 #cmake --build .\build\ --config Release

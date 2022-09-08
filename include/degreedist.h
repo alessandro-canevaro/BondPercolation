@@ -10,11 +10,11 @@ using namespace std;
 class DegreeDistribution{
 
     public:
-        DegreeDistribution(int nodes);
+        DegreeDistribution(int net_size);
 
         void generateBinomialDD(float p);
 
-        void geenrateFixedDD(int k);
+        void generateFixedDD(int k);
 
         void generateGeometricDD(float p);
 

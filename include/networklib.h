@@ -10,6 +10,8 @@ using namespace std;
 class Network{
 
     public:
+        Network(Network &net);
+
         Network(vector<int> degree_sequence);
 
         Network(vector<vector<int>> edge_list);

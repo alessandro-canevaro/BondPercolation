@@ -15,14 +15,15 @@
 #include <../include/featuredist.h>
 
 
-Percolation::Percolation(Network* network){
+Percolation::Percolation(vector<vector<int>> network, vector<vector<int>> edge_list){
     net = network;
-    nodes = net->getNetwork().size();
-    feat_dist = new FeatureDistribution(net->getEdgeList());
+    edges = edge_list;
+    nodes = network.size();
+    feat_dist = new FeatureDistribution(edges);
 }
 
 vector<int> Percolation::UniformNodeRemoval(){
-    vector<int> order;
+    vector<int> order(nodes);
     iota(order.begin(), order.end(), 0);
     shuffle(order.begin(), order.end(), rand_gen);
 
@@ -31,12 +32,11 @@ vector<int> Percolation::UniformNodeRemoval(){
 }
 
 vector<int> Percolation::HighestDegreeNodeRemoval(){
-    vector<vector<int>> network = net->getNetwork();
     vector<vector<int>> degree_list(nodes); //estimate of the highest degree
     vector<int> order;
 
     for(int i=0; i<nodes; i++){
-        degree_list[network[i].size()].push_back(i);
+        degree_list[net[i].size()].push_back(i);
     }
 
     for(int i=0; i<nodes; i++){
@@ -52,7 +52,7 @@ vector<int> Percolation::HighestDegreeNodeRemoval(){
 }
 
 vector<int> Percolation::UniformEdgeRemoval(){
-    vector<vector<int>> order = net->getEdgeList();
+    vector<vector<int>> order = edges;
     shuffle(order.begin(), order.end(), rand_gen);
 
     this->edgePercolation(order);
@@ -60,37 +60,52 @@ vector<int> Percolation::UniformEdgeRemoval(){
 }
 
 vector<int> Percolation::FeatureEdgeRemoval(int mu){
-    vector<vector<int>> order = net->getEdgeList();
+    vector<vector<int>> order = edges;
 
     feat_dist->generateFeatureDist(mu);
     vector<int> features = feat_dist->getFeatures();
 
-    sort(order.begin(), order.end(),
+    vector<int> indices(order.size());
+    iota(indices.begin(), indices.end(), 0);
+    sort(indices.begin(), indices.end(),
            [&](int A, int B) -> bool {
                 return features[A] < features[B];
             });
     
-    this->edgePercolation(order);
+    vector<vector<int>> sorted_order;
+    for(int idx: indices){
+        sorted_order.push_back(order[idx]);
+    }
+    
+    this->edgePercolation(sorted_order);
     return perc_results;    
 }
 
 vector<int> Percolation::CorrFeatureEdgeRemoval(){
-    vector<vector<int>> order = net->getEdgeList();
+    vector<vector<int>> order = edges;
 
     feat_dist->generateCorrFeatureDist();
     vector<int> features = feat_dist->getFeatures();
 
-    sort(order.begin(), order.end(),
+    vector<int> indices(order.size());
+    iota(indices.begin(), indices.end(), 0);
+    sort(indices.begin(), indices.end(),
            [&](int A, int B) -> bool {
                 return features[A] < features[B];
             });
+    
+    vector<vector<int>> sorted_order;
+    for(int idx: indices){
+        sorted_order.push_back(order[idx]);
+    }
 
-    this->edgePercolation(order);
+    this->edgePercolation(sorted_order);
     return perc_results;    
 }
 
 vector<int> Percolation::TemporalFeatureEdgeRemoval(){
-
+    vector<int> x;
+    return x;
 }
 
 void Percolation::nodePercolation(vector<int> node_order){
@@ -99,7 +114,7 @@ void Percolation::nodePercolation(vector<int> node_order){
     vector<int> labels(nodes);
     fill(labels.begin(), labels.end(), -1);
 
-    vector<vector<int>> old_net = net->getNetwork();
+    vector<vector<int>> old_net = net;
     vector<vector<int>> new_net(nodes); //contains nodes
     vector<int> cluster_size(nodes); //contains labels to size
     fill(cluster_size.begin(), cluster_size.end(), 0);
@@ -114,7 +129,6 @@ void Percolation::nodePercolation(vector<int> node_order){
 
     for(int n: node_order){
         //cout << "node: " << n << endl;
-
         labels[n] = new_label;
         cluster_size[new_label]++;
         new_label++;

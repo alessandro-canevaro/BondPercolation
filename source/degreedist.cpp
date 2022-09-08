@@ -6,18 +6,19 @@
 */
 
 #include <random>
+#include <iostream>
 #include <vector>
 #include <../include/degreedist.h>
 
 using namespace std;
 
-DegreeDistribution::DegreeDistribution(int nodes){
-    nodes = nodes;
+DegreeDistribution::DegreeDistribution(int net_size){
+    nodes = net_size;
     mt19937 rand_gen(rd());
 }
 
 void DegreeDistribution::generateBinomialDD(float p){
-    vector<int> degree_sequence (nodes);
+    vector<int> degree_sequence(nodes);
     binomial_distribution<> distrib(nodes, p);
 
     int sum = 1;
@@ -30,7 +31,7 @@ void DegreeDistribution::generateBinomialDD(float p){
     degree_dist = degree_sequence;
 }
 
-void DegreeDistribution::geenrateFixedDD(int k){
+void DegreeDistribution::generateFixedDD(int k){
     vector<int> degree_sequence (nodes);
     fill(degree_sequence.begin(), degree_sequence.end(), k);
     if((k*nodes) % 2 != 0){
