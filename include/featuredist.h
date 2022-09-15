@@ -9,7 +9,7 @@ using namespace std;
 
 class FeatureDistribution{
     public:
-        FeatureDistribution(vector<vector<int>> edge_list);
+        FeatureDistribution(vector<vector<int>> edges);
 
         void generateFeatureDist(int mu);
 
@@ -23,9 +23,8 @@ class FeatureDistribution{
 
         void getNet();
         void ComputeTemporalFeature(int max_t, int min_f, int max_f, double A, double k);
+        vector<vector<int>> transpose(vector<vector<int>> data);
 
-        random_device rd;
-        mt19937 rand_gen;
         int num_edges;
         vector<vector<int>> net;
         vector<vector<int>> edge_list;

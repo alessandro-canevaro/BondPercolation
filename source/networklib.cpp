@@ -13,12 +13,6 @@
 
 using namespace std;
 
-Network::Network(Network &net){
-    network = net.getNetwork();
-    nodes = network.size();
-    edge_list = net.getEdgeList();
-}
-
 Network::Network(vector<int> degree_sequence){
     nodes = degree_sequence.size();
     this->matchStubs(degree_sequence);
@@ -48,6 +42,8 @@ Network::Network(vector<vector<int>> edge_list){
 }
 
 void Network::equalizeEdges(int m){
+    random_device rd;
+    mt19937 gen(rd());
     vector<vector<int>> net = network;
     uniform_int_distribution<> distrib(0, nodes-1);
 
@@ -55,7 +51,7 @@ void Network::equalizeEdges(int m){
     int n1, n2;
 
     while(current_m > m){
-        n1 = distrib(rand_gen);
+        n1 = distrib(gen);
         if(net[n1].size() == 0){
             continue;
         }
@@ -67,8 +63,8 @@ void Network::equalizeEdges(int m){
 
     while(current_m < m){
         while(true){
-            n1 = distrib(rand_gen);
-            n2 = distrib(rand_gen);
+            n1 = distrib(gen);
+            n2 = distrib(gen);
             if(n1 != n2){
                 if(find(net[n1].begin(), net[n1].end(), n2) == net[n1].end()){
                     break;
@@ -102,17 +98,18 @@ vector<vector<int>> Network::getNetwork(){
 }
 
 void Network::matchStubs(vector<int> degree_sequence){
+    random_device rd;
+    mt19937 gen(rd());
     uniform_int_distribution<> distrib(0, nodes-1);
 
-    vector<vector<int>> net (nodes);
+    vector<vector<int>> net(nodes);
 
-    //cout << "matched started" << endl;
     for(int i=0; i<nodes; i++){
         while(degree_sequence[i] > 0){
             //chose another (valid) node at random
             int node = -1;
             while(true){
-                node = distrib(rand_gen);
+                node = distrib(gen);
                 
                 if (degree_sequence[node] > 0){
                     break;

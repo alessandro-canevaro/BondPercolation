@@ -10,7 +10,6 @@ using namespace std;
 class Network{
 
     public:
-        Network(Network &net);
 
         Network(vector<int> degree_sequence);
 
@@ -32,8 +31,6 @@ class Network{
 
         void makeEdgeList();
 
-        random_device rd;
-        mt19937 rand_gen;
         int nodes;
         vector<vector<int>> network;
         vector<vector<int>> edge_list;

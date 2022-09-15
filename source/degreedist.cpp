@@ -14,17 +14,18 @@ using namespace std;
 
 DegreeDistribution::DegreeDistribution(int net_size){
     nodes = net_size;
-    mt19937 rand_gen(rd());
 }
 
 void DegreeDistribution::generateBinomialDD(float p){
+    random_device rd;
+    mt19937 gen(rd());
     vector<int> degree_sequence(nodes);
     binomial_distribution<> distrib(nodes, p);
 
     int sum = 1;
     while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even
         for (int i=0; i<nodes; i++){
-            degree_sequence[i] = distrib(rand_gen);
+            degree_sequence[i] = distrib(gen);
         }
         sum = accumulate(degree_sequence.begin(), degree_sequence.end(), 0);
     }
@@ -41,13 +42,15 @@ void DegreeDistribution::generateFixedDD(int k){
 }
 
 void DegreeDistribution::generateGeometricDD(float p){
+    random_device rd;
+    mt19937 gen(rd());
     vector<int> degree_sequence (nodes);
     geometric_distribution<int> distrib(p);
 
     int sum = 1;
     while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even
         for (int i=0; i<nodes; i++){
-            degree_sequence[i] = distrib(rand_gen);
+            degree_sequence[i] = distrib(gen);
         }
         sum = accumulate(degree_sequence.begin(), degree_sequence.end(), 0);
     }
@@ -55,6 +58,8 @@ void DegreeDistribution::generateGeometricDD(float p){
 }
 
 void DegreeDistribution::generatePowerLawDD(float alpha){
+    random_device rd;
+    mt19937 gen(rd());
     vector<int> degree_sequence (nodes);
 
     vector<double> intervals, weights;
@@ -68,7 +73,7 @@ void DegreeDistribution::generatePowerLawDD(float alpha){
     int sum = 1;
     while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even
         for (int i=0; i<nodes; i++){
-            degree_sequence[i] = (int) distrib(rand_gen);
+            degree_sequence[i] = (int) distrib(gen);
         }
         sum = accumulate(degree_sequence.begin(), degree_sequence.end(), 0);
     }

@@ -16,23 +16,21 @@ class Percolation{
 
         vector<int> UniformNodeRemoval();
 
-        vector<int> HighestDegreeNodeRemoval();
+        vector<int> HighestDegreeNodeRemoval(int max_degree);
 
         vector<int> UniformEdgeRemoval();
 
-        vector<int> FeatureEdgeRemoval(int mu);
+        vector<int> FeatureEdgeRemoval(int mu, int max_feature);
 
-        vector<int> CorrFeatureEdgeRemoval();
+        vector<int> CorrFeatureEdgeRemoval(int max_feature);
 
-        vector<int> TemporalFeatureEdgeRemoval();
+        vector<int> TemporalFeatureEdgeRemoval(int mu, int t, int max_feature);
 
     protected:
 
         void nodePercolation(vector<int> node_order);
         void edgePercolation(vector<vector<int>> edge_order);
 
-        random_device rd;
-        mt19937 rand_gen;
         int nodes;
         vector<vector<int>> net;
         vector<vector<int>> edges;

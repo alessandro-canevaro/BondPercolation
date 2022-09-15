@@ -8,26 +8,30 @@
 #include <random>
 #include <vector>
 #include <algorithm>
+#include <iostream>
 #include <../include/featuredist.h>
 
 using namespace std;
 
-FeatureDistribution::FeatureDistribution(vector<vector<int>> edge_list){
-    edge_list = edge_list;
+FeatureDistribution::FeatureDistribution(vector<vector<int>> edges){
+    edge_list = edges;
     num_edges = edge_list.size();
-    mt19937 rand_gen(rd());
 }
 
 void FeatureDistribution::generateFeatureDist(int mu){
+    random_device rd;
+    mt19937 gen(rd());
     vector<int> feat;
     poisson_distribution<> d(mu);
     for(int i=0; i<num_edges; i++){
-        feat.push_back(d(rand_gen));
+        feat.push_back(d(gen));
     }
     features = {feat};
 }
 
 void FeatureDistribution::generateCorrFeatureDist(){
+    random_device rd;
+    mt19937 gen(rd());
     this->getNet();
 
     vector<int> feat;
@@ -36,7 +40,7 @@ void FeatureDistribution::generateCorrFeatureDist(){
         k1 = net[edge_list[i][0]].size();
         k2 = net[edge_list[i][1]].size();
         poisson_distribution<> d((k1+k2));
-        feat.push_back(d(rand_gen));
+        feat.push_back(d(gen));
     }
     features = {feat};
 }
@@ -49,14 +53,19 @@ void FeatureDistribution::generateTemporalFeatureDist(int mu){
     vector<int> feat = this->getFeatures(0);
 
     for(int i=0; i<num_edges; i++){
-        //cout << "F0: " << feature_values[i] << " extended: ";
-        //for(int j: func[feature_values[i]]){
+        //cout << "F0: " << feat[i] << " extended: ";
+        //for(int j: functions[feat[i]]){
         //    cout << j << ", ";
         //}
         //cout << endl;
-        result.push_back(functions[feat[i]]);
+        if(feat[i] > 20){
+            result.push_back(functions[20]);
+        }
+        else{
+            result.push_back(functions[feat[i]]);
+        }
     }
-    features = result;
+    features = this->transpose(result);
 }
 
 vector<int> FeatureDistribution::getFeatures(int t){
@@ -94,4 +103,13 @@ void FeatureDistribution::ComputeTemporalFeature(int max_t, int min_f, int max_f
         func.push_back(row);
     }
     functions = func;
+}
+
+vector<vector<int>> FeatureDistribution::transpose(vector<vector<int>> data){
+    vector<vector<int>> result(data[0].size(), vector<int>(data.size()));
+    for (vector<int>::size_type i = 0; i < data[0].size(); i++) 
+        for (vector<int>::size_type j = 0; j < data.size(); j++) {
+            result[i][j] = data[j][i];
+        }
+    return result;
 }

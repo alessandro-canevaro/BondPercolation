@@ -24,8 +24,6 @@ class DegreeDistribution{
 
     protected:
 
-        random_device rd;
-        mt19937 rand_gen;
         int nodes;
         vector<int> degree_dist;
 };
