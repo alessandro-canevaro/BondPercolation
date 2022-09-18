@@ -2,6 +2,7 @@ import yaml
 import csv
 import multiprocess as mp
 import numpy as np
+from math import asin, sin
 import matplotlib.pyplot as plt
 from scipy import optimize
 from scipy.stats import binom, geom, poisson
@@ -9,6 +10,7 @@ from alive_progress import alive_bar
 from warnings import filterwarnings
 
 filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
+filterwarnings("ignore", category=DeprecationWarning) 
 
 class AnalitycalSolution:
 
@@ -190,12 +192,12 @@ class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
         plt.title("Correlated features edge percolation \n"+description)
         return plt
 
-class TemporalFeatureEdgePercolation(AnalitycalSolution):
+class TemporalFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
 
     def __init__(self, net_size, data_path) -> None:
         self.nodes = net_size
         self.features_bins = np.arange(0, 20)
-        self.time_bins = np.arange(0, 10)
+        self.time_bins = np.arange(0, 30)
 
         with open(data_path) as file:
             self.exp_data = next(csv.reader(file))
@@ -203,16 +205,72 @@ class TemporalFeatureEdgePercolation(AnalitycalSolution):
         self.exp_data = [float(i)/self.nodes for i in self.exp_data]
         self.exp_data = np.array(self.exp_data).reshape(self.time_bins.size, self.features_bins.size)
 
+    def featureDist(self, k, t):
+        featdist = [poisson.pmf(f, 8) for f in self.features_bins]
+
+        def f(x, t):
+            A = 10
+            k = 10
+            phi = asin((x-k)/A)
+            return int(A*sin(2*3.1415*t/30.0 + phi)+k)
+
+        return sum([val for i, val in enumerate(featdist) if f(i, t)==k])
+
     def computeAnalitycalSolution(self, degdist, excdegdist, lower_limit, upper_limit):
-        pass
+        self.sol_data = np.zeros_like(self.exp_data)
+        def func(t):
+            result = []
+            for F0 in self.features_bins:
+                psi = sum([self.featureDist(f, t) for f in range(0, F0)])
+                def f(u):
+                    return u - 1 + psi - psi * self.g1(u, excdegdist, lower_limit, upper_limit)
+
+                sol = optimize.root(f, 0)
+                if not sol.success:
+                    raise AssertionError("Solution not found for F0={}".format(F0))
+                result.append(1-self.g0(sol.x, degdist, lower_limit, upper_limit))
+            return t, result
+
+
+        with alive_bar(len(self.time_bins), theme='smooth') as bar:
+            with mp.Pool(mp.cpu_count()) as pool:
+                for idx, val in pool.imap_unordered(func, self.time_bins):
+                    self.sol_data[idx] = val
+                    bar()
 
     def getPlot(self, description):
+        """
         plt.imshow(self.exp_data, cmap='viridis')
         plt.colorbar(label="Size of giant cluster")
         plt.ylim(-0.5, self.time_bins.size-0.5)
         plt.title("Temporal features edge percolation \n"+description)
         plt.xlabel("Maximum Feature F0")
         plt.ylabel("Time t")
+        """
+        """
+        for t in [14, 15, 16]:
+            plt.plot(self.features_bins, self.exp_data[t, :], marker='o', fillstyle='none', linestyle='none', label='Experimental results {}'.format(t))
+            plt.plot(self.features_bins, self.sol_data[t, :], marker='o', fillstyle='none', label='Analytical solution {}'.format(t))
+        plt.xlim((-0.5, len(self.features_bins)-0.5))
+        plt.ylim((-0.1, 1.1))
+        plt.title("Temporal features edge percolation \n"+description)
+        plt.legend(loc='upper left')
+        plt.xlabel("Maximum Feature F0")
+        plt.ylabel("Size of giant cluster")
+        plt.grid(True)
+        """
+        #"""
+        for f in [3, 8, 14]:
+            plt.plot(self.time_bins, self.exp_data[:, f], marker='o', fillstyle='none', linestyle='none', label='Experimental results {}'.format(f))
+            plt.plot(self.time_bins, self.sol_data[:, f], marker='o', fillstyle='none', label='Analytical solution {}'.format(f))
+        plt.xlim((-0.5, len(self.time_bins)-0.5))
+        plt.ylim((-0.1, 1.1))
+        plt.title("Temporal features edge percolation \n"+description)
+        plt.legend(loc='upper left')
+        plt.xlabel("Time t")
+        plt.ylabel("Size of giant cluster")
+        plt.grid(True)
+        #"""
         return plt
 
 def plotdistribution(dist, lower_limit, upper_limit):

@@ -297,7 +297,7 @@ void percolation(){
             net = new Network(getDegDist(network_size, network_type, param1));
             perc = new Percolation(net->getNetwork(), net->getEdgeList());
             row.clear();
-            for(int t=0; t<10; t++){
+            for(int t=0; t<30; t++){
                 data = perc->TemporalFeatureEdgeRemoval(8, t, 20);
                 move(data.begin(), data.end(), back_inserter(row));
             }

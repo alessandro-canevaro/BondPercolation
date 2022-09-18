@@ -47,7 +47,7 @@ void FeatureDistribution::generateCorrFeatureDist(){
 
 void FeatureDistribution::generateTemporalFeatureDist(int mu){
     this->generateFeatureDist(mu);
-    this->ComputeTemporalFeature(10, 0, 20, 10.0, 10.0);
+    this->ComputeTemporalFeature(30, 0, 20, 10.0, 10.0);
     vector<vector<int>> result;
 
     vector<int> feat = this->getFeatures(0);
@@ -96,7 +96,7 @@ void FeatureDistribution::ComputeTemporalFeature(int max_t, int min_f, int max_f
         vector<int> row;
         for(int j=0; j<=max_t; j++){
             double phi = asin((i-k)/A);
-            double f = A*sin(2*3.1415*j/10.0 + phi)+k;
+            double f = A*sin(2*3.1415*j/30.0 + phi)+k;
             //cout << "F0: " << i << " t: " << j << " f: " << round(f) << endl;
             row.push_back((int) f);
         }
