@@ -172,6 +172,15 @@ vector<vector<int>> transpose(vector<vector<int>> data){
     return result;
 }
 
+vector<vector<double>> transpose(vector<vector<double>> data){
+    vector<vector<double>> result(data[0].size(), vector<double>(data.size()));
+    for (vector<double>::size_type i = 0; i < data[0].size(); i++) 
+        for (vector<double>::size_type j = 0; j < data.size(); j++) {
+            result[i][j] = data[j][i];
+        }
+    return result;
+}
+
 vector<double> computeBinomialAverage(vector<vector<int>> data, string bin_path){
     vector<vector<double>> bin_pmf = loadBinomialPMF(bin_path);
     vector<vector<int>> sr_mat_t = transpose(data);
@@ -202,6 +211,15 @@ vector<double> computeAverage(vector<vector<int>> data){
     return result;
 }
 
+vector<double> computeAverage(vector<vector<double>> data){
+    vector<vector<double>> data_t = transpose(data);
+    vector<double> result;
+    for(vector<double> row: data_t){
+        result.push_back(average(row));
+    }
+    return result;
+}
+
 void percolation(){
     vector<string> exp_params = parseGiantCompConfigFile(CONFIG_FILE_PATH);
 
@@ -215,6 +233,7 @@ void percolation(){
     Network* net;
     Percolation* perc;
     vector<vector<int>> raw;
+    vector<vector<double>> raw_small_comp;
     vector<int> data, row;
     vector<double> result;
     int m = network_size;
@@ -297,7 +316,7 @@ void percolation(){
             net = new Network(getDegDist(network_size, network_type, param1));
             perc = new Percolation(net->getNetwork(), net->getEdgeList());
             row.clear();
-            for(int t=0; t<30; t++){
+            for(int t=0; t<30; t++){ //max t
                 data = perc->TemporalFeatureEdgeRemoval(8, t, 20);
                 move(data.begin(), data.end(), back_inserter(row));
             }
@@ -310,51 +329,26 @@ void percolation(){
         saveResults(output_data_path, result);
         break;
 
+    case 's': //small components uniform random removal node percolation.
+        for(int i=0; i<runs; i++){
+            net = new Network(getDegDist(network_size, network_type, param1));
+            perc = new Percolation(net->getNetwork(), net->getEdgeList());
+            raw_small_comp.push_back(perc->UniformNodeRemovalSmallComp());
+            delete net, perc;
+            bar.update();
+        }
+        cout << endl;
+        result = computeAverage(raw_small_comp);
+        saveResults(output_data_path, result);
+        break;
+
     default:
         cout << "percolation type not recognized" << endl;
         break;
     }
-
-    /*
-    if(percolation_type == 't' || percolation_type == 'f' || percolation_type == 'c' || percolation_type == 'e'){
-        result = gcs.computeAverageGiantClusterSizeAsFunctionOfK();
-        for(double r: result){
-            cout << r << ", ";
-        }
-        cout << endl;
-
-    }
-    else if(percolation_type == 'l'){
-        int m = network_size*param1*param2*0.5;
-        gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(m)+"_b"+to_string(PLOT_BINS)+".csv");
-        result = gcs.computeAverageGiantClusterSize(PLOT_BINS);
-    }
-    else if(percolation_type == 's'){
-        //gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv");
-        result = gcs.computeBinomialAverage(PLOT_BINS);
-    }
-    else{
-        gcs.loadBinomialPMF("./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv");
-        result = gcs.computeAverageGiantClusterSize(PLOT_BINS);
-    }
-    saveResults("./results/raw/node_perc_giant_cluster_exp_"+to_string(i)+".csv", result);
-    */
 }
 
-int main(){
-    /*
-    Network net = Network("./data/results/1930s/edgelist_level_0.txt");
-    net.removeSelfMultiEdges();
-    //net.printNetwork();
-    net.linkPercolation();
-    vector<int> result = net.getSasfunctionofF(100);
-    for(int r: result){
-        cout << r << ", ";
-    }
-    */
-
-    
-    
+int main(){   
     percolation();
     
     cout << endl << "all done" << endl;

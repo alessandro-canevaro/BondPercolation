@@ -239,18 +239,19 @@ class TemporalFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
                     bar()
 
     def getPlot(self, description):
-        """
+        
         plt.imshow(self.exp_data, cmap='viridis')
         plt.colorbar(label="Size of giant cluster")
         plt.ylim(-0.5, self.time_bins.size-0.5)
         plt.title("Temporal features edge percolation \n"+description)
         plt.xlabel("Maximum Feature F0")
         plt.ylabel("Time t")
-        """
-        """
-        for t in [14, 15, 16]:
-            plt.plot(self.features_bins, self.exp_data[t, :], marker='o', fillstyle='none', linestyle='none', label='Experimental results {}'.format(t))
-            plt.plot(self.features_bins, self.sol_data[t, :], marker='o', fillstyle='none', label='Analytical solution {}'.format(t))
+        plt.show()
+        plt.clf()
+
+        for t in [0, 3, 19]:
+            plt.plot(self.features_bins, self.exp_data[t, :], marker='o', fillstyle='none', linestyle='none')#, label='Experimental results {}'.format(t))
+            plt.plot(self.features_bins, self.sol_data[t, :], marker='o', fillstyle='none', label='Analytical sol. - t={}'.format(t))
         plt.xlim((-0.5, len(self.features_bins)-0.5))
         plt.ylim((-0.1, 1.1))
         plt.title("Temporal features edge percolation \n"+description)
@@ -258,11 +259,12 @@ class TemporalFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
         plt.xlabel("Maximum Feature F0")
         plt.ylabel("Size of giant cluster")
         plt.grid(True)
-        """
-        #"""
-        for f in [3, 8, 14]:
-            plt.plot(self.time_bins, self.exp_data[:, f], marker='o', fillstyle='none', linestyle='none', label='Experimental results {}'.format(f))
-            plt.plot(self.time_bins, self.sol_data[:, f], marker='o', fillstyle='none', label='Analytical solution {}'.format(f))
+        plt.show()
+        plt.clf()
+        
+        for f in [3, 10, 17]:
+            plt.plot(self.time_bins, self.exp_data[:, f], marker='o', fillstyle='none', linestyle='none')#, label='Experimental results {}'.format(f))
+            plt.plot(self.time_bins, self.sol_data[:, f], marker='o', fillstyle='none', label='Analytical sol. - f={}'.format(f))
         plt.xlim((-0.5, len(self.time_bins)-0.5))
         plt.ylim((-0.1, 1.1))
         plt.title("Temporal features edge percolation \n"+description)
@@ -270,7 +272,7 @@ class TemporalFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
         plt.xlabel("Time t")
         plt.ylabel("Size of giant cluster")
         plt.grid(True)
-        #"""
+        
         return plt
 
 def plotdistribution(dist, lower_limit, upper_limit):

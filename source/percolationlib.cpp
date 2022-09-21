@@ -29,8 +29,21 @@ vector<int> Percolation::UniformNodeRemoval(){
     iota(order.begin(), order.end(), 0);
     shuffle(order.begin(), order.end(), gen);
 
-    this->nodePercolation(order);
+    this->nodePercolation(order, false);
+    
     return perc_results;
+}
+
+vector<double> Percolation::UniformNodeRemovalSmallComp(){
+    random_device rd;
+    mt19937 gen(rd());
+    vector<int> order(nodes);
+    iota(order.begin(), order.end(), 0);
+    shuffle(order.begin(), order.end(), gen);
+
+    this->nodePercolation(order, true);
+    
+    return small_comp_results;
 }
 
 vector<int> Percolation::HighestDegreeNodeRemoval(int max_degree){
@@ -51,7 +64,7 @@ vector<int> Percolation::HighestDegreeNodeRemoval(int max_degree){
         }
     }
 
-    this->nodePercolation(order);
+    this->nodePercolation(order, false);
     
     vector<int> result(max_degree);
     fill(result.begin(), result.end(), 0);
@@ -302,7 +315,7 @@ vector<int> Percolation::TemporalFeatureEdgeRemoval(int mu, int t, int max_featu
     //return perc_results;    
 }
 
-void Percolation::nodePercolation(vector<int> node_order){
+void Percolation::nodePercolation(vector<int> node_order, bool small_comp){
     uniform_int_distribution<> distrib(0, nodes);
 
     vector<int> labels(nodes);
@@ -318,6 +331,9 @@ void Percolation::nodePercolation(vector<int> node_order){
     vector<int> result;
     result.push_back(0); //phi=0 -> no nodes
     int max_size = 1;
+
+    vector<double> small_result;
+    small_result.push_back(0);
 
     int node_count = 0;
 
@@ -366,6 +382,19 @@ void Percolation::nodePercolation(vector<int> node_order){
         }
         result.push_back(max_size);
     }
+
+    if(small_comp){
+        double tot = 0;
+        for(int i=1; i<1001; i++){ //for phi=1 count how many small comp. of size i there are.
+            int val = count(cluster_size.begin(), cluster_size.end(), i);
+            //cout << "found " << val << " cluster with size " << i << " ps: " << val*i/100000.0 << endl;
+            tot += val*i/(double) (nodes-max_size);
+            small_result.push_back(val*i/(double) (nodes-max_size));// << ", ";
+        }
+        //cout << "total " << tot << endl;
+        small_comp_results = small_result;
+    }
+
     perc_results = result;
 }
 

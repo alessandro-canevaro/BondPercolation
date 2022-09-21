@@ -53,11 +53,6 @@ void FeatureDistribution::generateTemporalFeatureDist(int mu){
     vector<int> feat = this->getFeatures(0);
 
     for(int i=0; i<num_edges; i++){
-        //cout << "F0: " << feat[i] << " extended: ";
-        //for(int j: functions[feat[i]]){
-        //    cout << j << ", ";
-        //}
-        //cout << endl;
         if(feat[i] > 20){
             result.push_back(functions[20]);
         }
