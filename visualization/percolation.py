@@ -280,7 +280,13 @@ class TemporalFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
 class SmallComponents(NodeUniformRemoval):
 
     def __init__(self, net_size, data_path) -> None:
-        super().__init__(net_size, data_path)
+        self.nodes = net_size
+
+        with open(data_path) as file:
+            self.exp_data = next(csv.reader(file))
+
+        self.exp_data = [float(i) for i in self.exp_data]
+        self.bins = np.arange(1, len(self.exp_data)+1)
 
     def computeAnalitycalSolution(self, degdist, excdegdist, lower_limit, upper_limit):
         self.sol_data = []
@@ -290,30 +296,32 @@ class SmallComponents(NodeUniformRemoval):
                 def f(u):
                     return u - 1 + phi - phi * self.g1(u, excdegdist, lower_limit, upper_limit)
 
-                sol = optimize.root(f, 0)
+                sol = optimize.root(f, 0.5)
                 if not sol.success:
                     raise AssertionError("Solution not found for s={}".format(s))
 
-                S = phi*(1-self.g0(sol.x))
-
                 def f2(z):
-                    self.g1(z, excdegdist, lower_limit, upper_limit)**s
+                    return self.g1(z, excdegdist, lower_limit, upper_limit)**s
 
-                if(s==1):
-                    self.sol_data.append(0)
+                if(s<=1):
+                    self.sol_data.append(degdist(lower_limit))
                 else:
-                    mean = 3
-                    self.sol_data.append(phi*derivative(f2, 1-phi, n=s-2, dx=1e-2, order=21)*mean*phi**(s-1)/factorial(s-1))
+                    mean = sum([k*degdist(k) for k in range(lower_limit, upper_limit)])
+                    self.sol_data.append(phi*derivative(f2, 1-phi, n=s-2, dx=1e-2, order=151)*mean*phi**(s-1)/factorial(s-1))
                 bar()
+
+        print(sum(self.sol_data), sum(self.exp_data))
     
     def getPlot(self, description):
         plt.plot(self.bins, self.exp_data, marker='o', fillstyle='none', linestyle='none', label='Experimental results')
         plt.plot(self.bins, self.sol_data, label="Analytical solution")
+        cut_off = 40
+        plt.plot(range(1, cut_off), [factorial(3*s-3, True)/(factorial(s-1, True)*factorial(2*s-1, True)) * 0.3**(s-1)*(1-0.3)**(2*s-1) for s in range(1, cut_off)], marker='o', fillstyle='none', label='analytical sol true.')
         #plt.xlim((-0.1, 1.1))
-        #plt.ylim((-0.1, 1.1))
+        plt.ylim((1e-4, 1e-0))
         plt.yscale("log")
         plt.title("Small component distribution - πs\n"+description)
-        plt.legend(loc='upper left')
+        plt.legend(loc='upper right')
         plt.xlabel("Component Size s")
         plt.ylabel("πs")
         plt.grid(True)

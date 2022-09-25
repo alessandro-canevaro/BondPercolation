@@ -333,7 +333,7 @@ void Percolation::nodePercolation(vector<int> node_order, bool small_comp){
     int max_size = 1;
 
     vector<double> small_result;
-    small_result.push_back(0);
+    //small_result.push_back(0);
 
     int node_count = 0;
 
@@ -385,7 +385,7 @@ void Percolation::nodePercolation(vector<int> node_order, bool small_comp){
 
     if(small_comp){
         double tot = 0;
-        for(int i=1; i<1001; i++){ //for phi=1 count how many small comp. of size i there are.
+        for(int i=1; i<40; i++){ //for phi=1 count how many small comp. of size i there are.
             int val = count(cluster_size.begin(), cluster_size.end(), i);
             //cout << "found " << val << " cluster with size " << i << " ps: " << val*i/100000.0 << endl;
             tot += val*i/(double) (nodes-max_size);
