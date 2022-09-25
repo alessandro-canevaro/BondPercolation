@@ -6,6 +6,8 @@ from math import asin, sin
 import matplotlib.pyplot as plt
 from scipy import optimize
 from scipy.stats import binom, geom, poisson
+from scipy.misc import derivative
+from scipy.special import factorial
 from alive_progress import alive_bar
 from warnings import filterwarnings
 
@@ -275,6 +277,48 @@ class TemporalFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
         
         return plt
 
+class SmallComponents(NodeUniformRemoval):
+
+    def __init__(self, net_size, data_path) -> None:
+        super().__init__(net_size, data_path)
+
+    def computeAnalitycalSolution(self, degdist, excdegdist, lower_limit, upper_limit):
+        self.sol_data = []
+        phi = 1
+        with alive_bar(len(self.bins), theme='smooth') as bar:
+            for s in self.bins:
+                def f(u):
+                    return u - 1 + phi - phi * self.g1(u, excdegdist, lower_limit, upper_limit)
+
+                sol = optimize.root(f, 0)
+                if not sol.success:
+                    raise AssertionError("Solution not found for s={}".format(s))
+
+                S = phi*(1-self.g0(sol.x))
+
+                def f2(z):
+                    self.g1(z, excdegdist, lower_limit, upper_limit)**s
+
+                if(s==1):
+                    self.sol_data.append(0)
+                else:
+                    mean = 3
+                    self.sol_data.append(phi*derivative(f2, 1-phi, n=s-2, dx=1e-2, order=21)*mean*phi**(s-1)/factorial(s-1))
+                bar()
+    
+    def getPlot(self, description):
+        plt.plot(self.bins, self.exp_data, marker='o', fillstyle='none', linestyle='none', label='Experimental results')
+        plt.plot(self.bins, self.sol_data, label="Analytical solution")
+        #plt.xlim((-0.1, 1.1))
+        #plt.ylim((-0.1, 1.1))
+        plt.yscale("log")
+        plt.title("Small component distribution - πs\n"+description)
+        plt.legend(loc='upper left')
+        plt.xlabel("Component Size s")
+        plt.ylabel("πs")
+        plt.grid(True)
+        return plt
+
 def plotdistribution(dist, lower_limit, upper_limit):
     x = np.arange(lower_limit, upper_limit)
     y = [dist(k) for k in x]
@@ -304,6 +348,7 @@ def main():
                'f': UncorrelatedFeatureEdgePercolation, #edge percolation uncorrelated features
                'c': CorrelatedFeatureEdgePercolation, #edge percolation correlated features
                't': TemporalFeatureEdgePercolation, #edge percolation temporal features
+               's': SmallComponents, #small components node percolation
                '': None}[perc_type](net_size, exp_data_path)
 
     if net_type == 'p':
