@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <random>
 #include <numeric>
+#include <omp.h>
 #include <../include/degreedist.h>
 #include <../include/networklib.h>
 #include <../include/percolationlib.h>
@@ -156,11 +157,11 @@ vector<vector<double>> loadBinomialPMF(string path){
 }
 
 double average(vector<double> data){
-    double sum = (double) data.size()-count(data.begin(), data.end(), 0);
+    double sum = (double) data.size();//-count(data.begin(), data.end(), 0);
     if(sum == 0){
         return 0;
     }
-    return reduce(data.begin(), data.end()) / sum; //(double) data.size();//
+    return reduce(data.begin(), data.end(), 0.0) / sum; //(double) data.size();//
 }
 
 vector<vector<int>> transpose(vector<vector<int>> data){
@@ -201,6 +202,25 @@ vector<double> computeBinomialAverage(vector<vector<int>> data, string bin_path)
     return result;
 }
 
+vector<double> computeBinomialAverage(vector<vector<double>> data, string bin_path){
+    vector<vector<double>> bin_pmf = loadBinomialPMF(bin_path);
+    vector<vector<double>> sr_mat_t = transpose(data);
+    vector<double> avg_sr;
+    for(int i=0; i<sr_mat_t.size(); i++){
+        avg_sr.push_back(average(sr_mat_t[i]));
+    }
+
+    vector<double> result;
+    for(int i=0; i<PLOT_BINS; i++){
+        double tmp = 0;
+        for(int r=0; r<avg_sr.size(); r++){
+            tmp += bin_pmf[i][r]*avg_sr[r];
+        }
+        result.push_back(tmp);
+    }
+    return result;
+}
+
 vector<double> computeAverage(vector<vector<int>> data){
     vector<vector<int>> data_t = transpose(data);
     vector<double> result;
@@ -218,6 +238,25 @@ vector<double> computeAverage(vector<vector<double>> data){
         result.push_back(average(row));
     }
     return result;
+}
+
+vector<vector<int>> loadEdgeList(string path){
+    //cout << "loading" << endl;
+    vector<vector<int>> edgelist;
+    ifstream myfile(path);
+    int v1, v2;
+    if (myfile.is_open()){
+        //cout << "file open" << endl;
+        while (myfile >> v1 >> v2){
+            //cout << v1 << endl;
+            edgelist.push_back({v1, v2});
+        }
+        myfile.close();
+    }
+    else{
+        cout << "Unable to open file";
+    } 
+    return edgelist;
 }
 
 void percolation(){
@@ -240,6 +279,8 @@ void percolation(){
     string binomial_data_path = "./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv";
     string output_data_path = "./results/raw/percolation_result.csv";
     progressbar bar(runs);
+
+    vector<double> test;
 
     switch(percolation_type){
     case 'n': //uniform random removal node perc.
@@ -332,13 +373,18 @@ void percolation(){
     case 's': //small components uniform random removal node percolation.
         for(int i=0; i<runs; i++){
             net = new Network(getDegDist(network_size, network_type, param1));
+            //net = new Network(loadEdgeList("./data/edge_list_small.txt"));
             perc = new Percolation(net->getNetwork(), net->getEdgeList());
             raw_small_comp.push_back(perc->UniformNodeRemovalSmallComp());
+            //cout << raw_small_comp[0].size() << endl;
             delete net, perc;
             bar.update();
         }
         cout << endl;
-        result = computeAverage(raw_small_comp);
+        
+        //result = computeAverage(raw_small_comp);
+        binomial_data_path = "./data/pmf/binomial/binomialPMF_n"+to_string(m)+"_b"+to_string(PLOT_BINS)+".csv";
+        result = computeBinomialAverage(raw_small_comp, binomial_data_path);
         saveResults(output_data_path, result);
         break;
 

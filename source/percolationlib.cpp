@@ -333,7 +333,7 @@ void Percolation::nodePercolation(vector<int> node_order, bool small_comp){
     int max_size = 1;
 
     vector<double> small_result;
-    //small_result.push_back(0);
+    small_result.push_back(0);
 
     int node_count = 0;
 
@@ -381,19 +381,38 @@ void Percolation::nodePercolation(vector<int> node_order, bool small_comp){
             }
         }
         result.push_back(max_size);
-    }
 
-    if(small_comp){
-        double tot = 0;
-        for(int i=1; i<40; i++){ //for phi=1 count how many small comp. of size i there are.
-            int val = count(cluster_size.begin(), cluster_size.end(), i);
-            //cout << "found " << val << " cluster with size " << i << " ps: " << val*i/100000.0 << endl;
-            tot += val*i/(double) (nodes-max_size);
-            small_result.push_back(val*i/(double) (nodes-max_size));// << ", ";
+        if(small_comp){
+            //cout << "n: " << n << endl;
+            int s=2;
+            int val = count(cluster_size.begin(), cluster_size.end(), s);
+            double ps = val*s/(double) (nodes);
+            small_result.push_back(ps);
         }
+    }
+    //cout << "perc completed"<< endl;
+    
+    if(small_comp){
+        /*
+        max_size = 0;
+        cluster_size[giant_cluster_label] = 0;
+        //cout << "gaint cluster size:" << max_size << endl;
+        double tot = 0;
+        for(int i=1; i<100; i++){ //for phi=1 count how many small comp. of size i there are.
+            int val = count(cluster_size.begin(), cluster_size.end(), i);
+            double ps = val*i/(double) (nodes-max_size);
+            //cout << "found " << val << " cluster with size " << i << " ps: " << ps << endl;
+            tot += ps;
+            small_result.push_back(ps);// << ", ";
+        }
+        //for(int i=0; i<small_result.size(); i++){
+        //    small_result[i] = small_result[i] / tot;
+        //}
         //cout << "total " << tot << endl;
+        */
         small_comp_results = small_result;
     }
+    
 
     perc_results = result;
 }

@@ -25,8 +25,7 @@ Network::Network(vector<vector<int>> edge_list){
     for(int i=0; i<edge_list.size(); i++){
         tmp.push_back(max(edge_list[i][0], edge_list[i][1]));
     }
-    int nodes = *max_element(tmp.begin(), tmp.end());
-    nodes++; //count node 0
+    nodes = *max_element(tmp.begin(), tmp.end()) + 1;//count node 0
 
     vector<vector<int>> net(nodes);
 
@@ -36,7 +35,6 @@ Network::Network(vector<vector<int>> edge_list){
     }
 
     network = net;
-    
     this->removeSelfMultiEdges();
     this->makeEdgeList();
 }

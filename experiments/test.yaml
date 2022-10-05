@@ -1,5 +1,5 @@
   runs: 100
-  network_size: 100000
+  network_size: 10000
   network_type: g
   percolation_type: s
-  param1: 0.3
+  param1: 0.7
