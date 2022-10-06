@@ -11,9 +11,12 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/source)
 
 add_executable (main source/main.cpp)
 
+find_package(OpenMP REQUIRED)
+
 target_compile_options(main PUBLIC -fopenmp)
 target_compile_options(main PUBLIC -O0)
 
+target_link_libraries(main OpenMP::OpenMP_CXX)
 target_link_libraries(main net)
 target_link_libraries(main deg)
 target_link_libraries(main feat)

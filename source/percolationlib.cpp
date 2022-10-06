@@ -334,14 +334,17 @@ void Percolation::nodePercolation(vector<int> node_order, bool small_comp){
 
     vector<double> small_result;
     small_result.push_back(0);
-
-    int node_count = 0;
+    int s=3;
+    int num_clusters_of_size_s = 0;
 
     for(int n: node_order){
         //cout << "node: " << n << endl;
         labels[n] = new_label;
         cluster_size[new_label]++;
         new_label++;
+
+        if(s==1){num_clusters_of_size_s++;}
+
         for(int n2: old_net[n]){
             if(labels[n2] != -1){
                 //cout << "adding edge between node " << n << " and " << n2 << endl;
@@ -359,6 +362,16 @@ void Percolation::nodePercolation(vector<int> node_order, bool small_comp){
                     else{
                         frontier.push_back(n);
                         lab = labels[n2];     
+                    }
+
+                    if(cluster_size[lab] == s){
+                        num_clusters_of_size_s--;
+                    }
+                    if(cluster_size[labels[frontier.back()]] == s){
+                        num_clusters_of_size_s--;
+                    }
+                    if(cluster_size[lab] + cluster_size[labels[frontier.back()]] == s){
+                        num_clusters_of_size_s++;
                     }
 
                     cluster_size[lab] += cluster_size[labels[frontier.back()]];
@@ -383,10 +396,7 @@ void Percolation::nodePercolation(vector<int> node_order, bool small_comp){
         result.push_back(max_size);
 
         if(small_comp){
-            //cout << "n: " << n << endl;
-            int s=2;
-            int val = count(cluster_size.begin(), cluster_size.end(), s);
-            double ps = val*s/(double) (nodes);
+            double ps = num_clusters_of_size_s*s/(double) (nodes);
             small_result.push_back(ps);
         }
     }

@@ -41,11 +41,11 @@ void DegreeDistribution::generateFixedDD(int k){
     degree_dist = degree_sequence;
 }
 
-void DegreeDistribution::generateGeometricDD(float p){
+void DegreeDistribution::generateGeometricDD(float a){
     random_device rd;
     mt19937 gen(rd());
     vector<int> degree_sequence (nodes);
-    geometric_distribution<int> distrib(p);
+    geometric_distribution<int> distrib(1-a);
 
     int sum = 1;
     while (sum % 2 != 0){ //generate a sequence until the total number of stubs is even

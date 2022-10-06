@@ -350,36 +350,41 @@ class SmallComponents(NodeUniformRemoval):
         self.bins_s = np.arange(1, len(self.exp_data)+1)
 
     def computeAnalitycalSolution(self, degdist, excdegdist, lower_limit, upper_limit):
-        self.sol_data = []
-        s = 2
-        a = 1-0.7 #1-p
+        self.sol_data = np.zeros_like(self.exp_data)
+        s = 3
+        a = 0.3
+
+        def func(idx):
+            phi = self.bins_phi[idx]
+
+            def f(u):
+                return u - 1 + phi - phi * self.g1(u, excdegdist, lower_limit, upper_limit)
+
+            sol = optimize.root(f, 0.6)
+            if not sol.success:
+                print("Solution not found for phi={}".format(phi))
+                return 0, idx
+                raise AssertionError("Solution not found for phi={}".format(phi))
+
+            def f2(z):
+                return self.g1(z, excdegdist, lower_limit, upper_limit)**s
+        
+            if(s==1):
+                return phi*sum([degdist(k)*(1-phi)**k for k in range(lower_limit, upper_limit)]), idx
+            else:
+                mean = sum([k*degdist(k) for k in range(lower_limit, upper_limit)])
+                return phi*derivative(f2, 1-phi, n=s-2, dx=1e-2, order=151)*mean*phi**(s-1)/factorial(s-1), idx
+
         with alive_bar(len(self.bins_phi), theme='smooth') as bar:
-            for phi in self.bins_phi:
-                def f(u):
-                    return u - 1 + phi - phi * self.g1(u, excdegdist, lower_limit, upper_limit)
-
-                sol = optimize.root(f, 0.6)
-                if not sol.success:
-                    self.sol_data.append(0)
-                    print("Solution not found for phi={}".format(phi))
-                    continue
-                    raise AssertionError("Solution not found for phi={}".format(phi))
-
-                def f2(z):
-                    return self.g1(z, excdegdist, lower_limit, upper_limit)**s
-            
-                if(s<=1):
-                    self.sol_data.append(degdist(0))
-                else:
-                    mean = sum([k*degdist(k) for k in range(lower_limit, upper_limit)])
-                    self.sol_data.append(phi*derivative(f2, 1-phi, n=s-2, dx=1e-2, order=151)*mean*phi**(s-1)/factorial(s-1))
-                
-                bar()
+            with mp.Pool(mp.cpu_count()) as pool:
+                for val, idx in pool.imap_unordered(func, list(range(len(self.bins_phi)))):
+                    self.sol_data[idx] = val
+                    bar()
 
     def computeAnalitycalSolution2(self, degdist, excdegdist, lower_limit, upper_limit):
         self.sol_data = []
         phi = 1
-        a = 1-0.5 #1-p
+        a = 0.5
         with alive_bar(len(self.bins_s), theme='smooth') as bar:
             for s in self.bins_s:
                 true_sol = factorial(3*s-3, True)/(factorial(s-1, True)*factorial(2*s-1, True)) * a**(s-1)*(1-a)**(2*s-1) #true analytical solution
@@ -471,12 +476,12 @@ def main():
 
     subtitle = {'b': "ER network ⟨k⟩ = {:.1f}; n={}; runs={}".format(net_size*param1, net_size, params['runs']),
                 'p': "SF network α = {:.1f}; n={}; runs={}".format(param1, net_size, params['runs']),
-                'g': "Geometric degree dist. network p = {:.1f}; n={}; runs={}".format(param1, net_size, params['runs']),
+                'g': "Geometric degree dist. network a = {:.1f}; n={}; runs={}".format(param1, net_size, params['runs']),
                 'f': "Fixed degree network k = {:.1f}; n={}; runs={}".format(int(param1), net_size, params['runs'])}[net_type]
 
     degdist = {'b': lambda k: binom.pmf(k, net_size, param1),
                'p': lambda k: (k**(-param1)/C) if k>=2 else 0,
-               'g': lambda k: geom.pmf(k+1, param1),
+               'g': lambda k: geom.pmf(k+1, 1-param1),
                'f': lambda k: 1 if k==int(param1) else 0}[net_type]
 
     degdistmean = sum([k*degdist(k) for k in range(lower_limit, upper_limit)])

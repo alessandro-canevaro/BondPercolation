@@ -16,7 +16,7 @@ class DegreeDistribution{
 
         void generateFixedDD(int k);
 
-        void generateGeometricDD(float p);
+        void generateGeometricDD(float a);
 
         void generatePowerLawDD(float alpha);
 

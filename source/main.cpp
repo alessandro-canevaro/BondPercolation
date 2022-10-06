@@ -114,44 +114,50 @@ float getDegDistMean(int nodes, char net_type, float param1){
 
 vector<vector<double>> loadBinomialPMF(string path){
     cout << "loading pmf: " << path << endl;
-    vector<vector<double>> result;
-    string line;
+    vector<vector<double>> result(PLOT_BINS);
+    vector<string> lines(PLOT_BINS);
     ifstream myfile (path);
     progressbar bar(PLOT_BINS);
 
     if (myfile.is_open()){;
-        while (getline(myfile, line)){
-            //cout << "reading line: " << result.size() << endl;
-            vector<double> row;
-            while(true){
-                auto pos = line.find(',');
-                if(pos != string::npos){
-                    string str = line.substr(0, pos);
-                    line.erase(0, pos+1);
-                    //cout << str << endl;
-                    try{
-                        row.push_back(stod(str));}
-                        catch (out_of_range){
-                            cout << "out of range " << str << endl;
-                        }
-                }
-                else{
-                    try{
-                        row.push_back(stod(line));}
-                        catch (out_of_range){
-                            cout << "out of range " << line << endl;
-                    }
-                    break;
-                }
-            }
-            result.push_back(row);
-            bar.update();
+        for(int i=0; i<PLOT_BINS; i++){
+            getline(myfile, lines[i]);
         }
-        cout << endl;
         myfile.close();
     }
     else{
         cout << "Unable to open file" << endl;
+    }
+    //cout << "file has: " << lines.size() << " lines" << endl;
+
+    #pragma omp parallel for
+    for(int i=0; i<PLOT_BINS; i++){
+        //cout << "reading line: " << i << endl;
+        string line = lines[i];
+        vector<double> row;
+        while(true){
+            auto pos = line.find(',');
+            if(pos != string::npos){
+                string str = line.substr(0, pos);
+                line.erase(0, pos+1);
+                //cout << str << endl;
+                try{
+                    row.push_back(stod(str));}
+                    catch (out_of_range){
+                        cout << "out of range " << str << endl;
+                    }
+            }
+            else{
+                try{
+                    row.push_back(stod(line));}
+                    catch (out_of_range){
+                        cout << "out of range " << line << endl;
+                }
+                break;
+            }
+        }
+        result[i] = row;
+        bar.update();
     }
     return result;
 }
@@ -269,19 +275,81 @@ void percolation(){
     float param1 = stof(exp_params[4]);
     cout << "runs: " << runs << ", size: " << network_size << ", type: " << network_type << ", percolation: " << percolation_type << ", p1: " << param1 << endl;
 
-    Network* net;
-    Percolation* perc;
-    vector<vector<int>> raw;
-    vector<vector<double>> raw_small_comp;
+    vector<vector<int>> raw(runs);
+    vector<vector<double>> raw_small_comp(runs);
     vector<int> data, row;
     vector<double> result;
-    int m = network_size;
+    int m = round(network_size*0.5*getDegDistMean(network_size, network_type, param1));
     string binomial_data_path = "./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv";
     string output_data_path = "./results/raw/percolation_result.csv";
     progressbar bar(runs);
 
     vector<double> test;
 
+    double t1 = omp_get_wtime();
+    
+    #pragma omp prarallel for
+    for(int i=0; i<runs; i++){
+        Network net = Network(getDegDist(network_size, network_type, param1));
+        if(percolation_type=='l'){
+            net.equalizeEdges(m);
+        }
+
+        Percolation perc = Percolation(net.getNetwork(), net.getEdgeList());
+        
+        if(percolation_type=='n'){
+            raw[i] = perc.UniformNodeRemoval();
+        }
+        if(percolation_type=='a'){
+            raw[i] = perc.HighestDegreeNodeRemoval(20);
+        }
+        if(percolation_type=='l'){
+            raw[i] = perc.UniformEdgeRemoval();
+        }
+        if(percolation_type=='f'){
+            raw[i] = perc.FeatureEdgeRemoval(8, 20);
+        }
+        if(percolation_type=='c'){
+            raw[i] = perc.CorrFeatureEdgeRemoval(20);
+        }
+        if(percolation_type=='t'){
+            row.clear();
+            for(int t=0; t<30; t++){ //max t
+                data = perc.TemporalFeatureEdgeRemoval(8, t, 20);
+                move(data.begin(), data.end(), back_inserter(row));
+            }
+            raw[i] = row;
+        }
+        if(percolation_type=='s'){
+            raw_small_comp[i] = perc.UniformNodeRemovalSmallComp();
+        }
+
+        bar.update();
+    }
+    cout << endl;
+
+    double t2 = omp_get_wtime();
+    cout << "percolation took: " << t2-t1 << " seconds" << endl;
+
+    if(percolation_type=='n'){
+        result = computeBinomialAverage(raw, binomial_data_path);
+    }
+    if(percolation_type=='a' || percolation_type=='f' || percolation_type=='c' || percolation_type=='t'){
+        result = computeAverage(raw);
+    }
+    if(percolation_type=='l'){
+        binomial_data_path = "./data/pmf/binomial/binomialPMF_n"+to_string(m)+"_b"+to_string(PLOT_BINS)+".csv";
+        result = computeBinomialAverage(raw, binomial_data_path);
+    }
+    if(percolation_type=='s'){
+        result = computeBinomialAverage(raw_small_comp, binomial_data_path);
+    }
+    saveResults(output_data_path, result);
+
+    double t3 = omp_get_wtime();
+    cout << "data processing took: " << t3-t2 << " seconds" << endl;
+
+    /*
     switch(percolation_type){
     case 'n': //uniform random removal node perc.
         for(int i=0; i<runs; i++){
@@ -376,7 +444,6 @@ void percolation(){
             //net = new Network(loadEdgeList("./data/edge_list_small.txt"));
             perc = new Percolation(net->getNetwork(), net->getEdgeList());
             raw_small_comp.push_back(perc->UniformNodeRemovalSmallComp());
-            //cout << raw_small_comp[0].size() << endl;
             delete net, perc;
             bar.update();
         }
@@ -392,9 +459,11 @@ void percolation(){
         cout << "percolation type not recognized" << endl;
         break;
     }
+    */
 }
 
 int main(){   
+    cout << "Starting; num_threads=" << omp_get_num_threads() << endl;
     percolation();
     
     cout << endl << "all done" << endl;
