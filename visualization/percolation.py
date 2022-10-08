@@ -352,7 +352,6 @@ class SmallComponents(NodeUniformRemoval):
     def computeAnalitycalSolution(self, degdist, excdegdist, lower_limit, upper_limit):
         self.sol_data = np.zeros_like(self.exp_data)
         s = 3
-        a = 0.3
 
         def func(idx):
             phi = self.bins_phi[idx]
@@ -373,7 +372,7 @@ class SmallComponents(NodeUniformRemoval):
                 return phi*sum([degdist(k)*(1-phi)**k for k in range(lower_limit, upper_limit)]), idx
             else:
                 mean = sum([k*degdist(k) for k in range(lower_limit, upper_limit)])
-                return phi*derivative(f2, 1-phi, n=s-2, dx=1e-2, order=151)*mean*phi**(s-1)/factorial(s-1), idx
+                return phi*derivative(f2, 1-phi, n=s-2, dx=1e-2, order=51)*mean*phi**(s-1)/factorial(s-1), idx
 
         with alive_bar(len(self.bins_phi), theme='smooth') as bar:
             with mp.Pool(mp.cpu_count()) as pool:
@@ -422,7 +421,7 @@ class SmallComponents(NodeUniformRemoval):
         #plt.plot(self.bins_s, data_10k[:99], marker='o', fillstyle='none', linestyle='none', label='single run')
         #plt.ylim((1e-5, 1e-0))
         plt.yscale("log")
-        plt.title("Small component distribution - πs\n"+description)
+        plt.title("Small components distribution - πs\n"+description)
         plt.legend(loc='upper right')
         plt.xlabel("Component Size s")
         plt.ylabel("πs")
@@ -431,7 +430,7 @@ class SmallComponents(NodeUniformRemoval):
 
         plt.plot(self.bins_phi, self.exp_data, marker='o', fillstyle='none', linestyle='none', label='Experimental results')
         plt.plot(self.bins_phi, self.sol_data, marker='o', fillstyle='none', label="Analytical solution")
-        plt.title("Small component distribution - πs\n"+description)
+        plt.title("Small component distribution - s=3\n"+description)
         plt.legend(loc='upper left')
         plt.xlabel("Occupation probability φ")
         plt.ylabel("πs")

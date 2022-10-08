@@ -463,7 +463,6 @@ void percolation(){
 }
 
 int main(){   
-    cout << "Starting; num_threads=" << omp_get_num_threads() << endl;
     percolation();
     
     cout << endl << "all done" << endl;
