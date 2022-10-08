@@ -37,7 +37,9 @@
 .vscode/dryrun.log
 .vscode/configurationCache.log
 
+./CMakeLists.txt
+
 #Folders
 build/
-results/
-data/
+data/results/
+data/TemporalData/
