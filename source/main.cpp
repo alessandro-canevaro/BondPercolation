@@ -130,7 +130,7 @@ vector<vector<double>> loadBinomialPMF(string path){
     }
     //cout << "file has: " << lines.size() << " lines" << endl;
 
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(16)
     for(int i=0; i<PLOT_BINS; i++){
         //cout << "reading line: " << i << endl;
         string line = lines[i];
@@ -288,7 +288,7 @@ void percolation(){
 
     double t1 = omp_get_wtime();
     
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(4)
     for(int i=0; i<runs; i++){
         Network net = Network(getDegDist(network_size, network_type, param1));
         if(percolation_type=='l'){
