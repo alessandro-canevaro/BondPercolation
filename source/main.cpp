@@ -116,10 +116,10 @@ vector<vector<double>> loadBinomialPMF(string path){
     cout << "loading pmf: " << path << endl;
     vector<vector<double>> result(PLOT_BINS);
     vector<string> lines(PLOT_BINS);
-    ifstream myfile (path);
+    ifstream myfile (path, ios::in);
     progressbar bar(PLOT_BINS);
 
-    if (myfile.is_open()){;
+    if (myfile.is_open()){
         for(int i=0; i<PLOT_BINS; i++){
             getline(myfile, lines[i]);
         }
@@ -167,7 +167,7 @@ double average(vector<double> data){
     if(sum == 0){
         return 0;
     }
-    return reduce(data.begin(), data.end(), 0.0) / sum; //(double) data.size();//
+    return accumulate(data.begin(), data.end(), 0.0) / sum; //(double) data.size();//
 }
 
 vector<vector<int>> transpose(vector<vector<int>> data){
@@ -280,7 +280,7 @@ void percolation(){
     vector<int> data, row;
     vector<double> result;
     int m = round(network_size*0.5*getDegDistMean(network_size, network_type, param1));
-    string binomial_data_path = "./data/pmf/binomial/binomialPMF_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv";
+    string binomial_data_path = "./data/pmf/binomial/binomialpmf_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv";
     string output_data_path = "./results/raw/percolation_result.csv";
     progressbar bar(runs);
 
@@ -288,7 +288,7 @@ void percolation(){
 
     double t1 = omp_get_wtime();
     
-    #pragma omp prarallel for
+    #pragma omp parallel for
     for(int i=0; i<runs; i++){
         Network net = Network(getDegDist(network_size, network_type, param1));
         if(percolation_type=='l'){
@@ -338,7 +338,7 @@ void percolation(){
         result = computeAverage(raw);
     }
     if(percolation_type=='l'){
-        binomial_data_path = "./data/pmf/binomial/binomialPMF_n"+to_string(m)+"_b"+to_string(PLOT_BINS)+".csv";
+        binomial_data_path = "./data/pmf/binomial/binomialpmf_n"+to_string(m)+"_b"+to_string(PLOT_BINS)+".csv";
         result = computeBinomialAverage(raw, binomial_data_path);
     }
     if(percolation_type=='s'){
