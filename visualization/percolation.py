@@ -493,8 +493,8 @@ def main():
 
     plotter.computeAnalitycalSolution(degdist, excdegdist, lower_limit, upper_limit)
     plt = plotter.getPlot(subtitle)
-    plt.savefig("./results/figures/node_perc_giant_cluster_exp_{}.png".format(0))
-    #plt.show()
+    #plt.savefig("./results/figures/node_perc_giant_cluster_exp_{}.png".format(0))
+    plt.show()
 
 if __name__ == "__main__":
     main()
