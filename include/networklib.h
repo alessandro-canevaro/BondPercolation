@@ -19,6 +19,8 @@ class Network{
 
         void printNetwork();
 
+        vector<double> getDegDist();
+
         vector<vector<int>> getEdgeList();
 
         vector<vector<int>> getNetwork();

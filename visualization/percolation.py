@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from scipy import optimize
 from scipy.stats import binom, geom, poisson
 from scipy.misc import derivative
-from scipy.special import factorial#, gamma, gammaincc
+from scipy.special import factorial, gammaincc#, gamma, gammaincc
 from mpmath import gamma, gammainc
 from alive_progress import alive_bar
 from warnings import filterwarnings
@@ -139,7 +139,7 @@ class UncorrelatedFeatureEdgePercolation(NodeUniformRemoval):
                 bar()
     
     def getPlot(self, description):
-        plt.plot(self.bins, self.exp_data, marker='o', fillstyle='none', linestyle='none', label='Experimental results')
+        plt.plot(self.bins, self.exp_data, marker='x', fillstyle='none', linestyle='dashed', label='Experimental results')
         plt.plot(self.bins, self.sol_data, marker='o', fillstyle='none', label="Analytical solution")
         plt.xlim((-0.5, len(self.bins)-0.5))
         plt.ylim((-0.1, 1.1))
@@ -195,17 +195,16 @@ class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
 
         degdistmean = sum([k*degdist(k) for k in range(lower_limit, upper_limit)])
 
-        upper_limit = 10
+        upper_limit = 100
 
         def pfkk(f, m):
             return poisson.pmf(f, m)
 
         def psi(u, k, F0):
-            
-            a = np.exp(-degdistmean)/gamma(F0+1) * sum([u[m-1]*degdistmean**m / factorial(m) * gammainc(F0+1, k+m+1) for m in range(1, upper_limit)])
+            #a = np.exp(-degdistmean)* sum([(1-u[m-1])*degdistmean**(m-1) / factorial(m-1) * gammaincc(F0, k+m) for m in range(1, upper_limit)])
             #b = sum([sum([excdegdist(m-1) * pfkk(f, (m+k)) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
-            #print(a, b)
-            return a
+            c = sum([(1-u[m-1])* excdegdist(m-1) * gammaincc(F0, (k+m)) for m in range(1, upper_limit)])
+            return c
 
         def func(F0):
             def vecfunc(u):
@@ -231,6 +230,8 @@ class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
             with mp.Pool(mp.cpu_count()) as pool:
                 for idx, val in pool.imap_unordered(func, self.bins):
                     #quit()
+                    if(idx==0):
+                        val = 0
                     self.sol_data[idx] = val
                     bar()
 
@@ -238,6 +239,7 @@ class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
     def getPlot(self, description):
         plt = super().getPlot(description)
         plt.title("Correlated features edge percolation \n"+description)
+        plt.xlabel("Maximum Feaure F0 - P(F | k, k') = Poisson(k+k')")
         return plt
 
 class TemporalFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
@@ -282,7 +284,8 @@ class TemporalFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
 
                 sol = optimize.root(f, 0)
                 if not sol.success:
-                    raise AssertionError("Solution not found for F0={}".format(F0))
+                    print("error")
+                    #raise AssertionError("Solution not found for F0={}".format(F0))
 
                 if self.g1p(sol.x, excdegdist, lower_limit, upper_limit) > 1:
                     critical_point = F0-1 if F0 > 0 else 0
@@ -440,9 +443,11 @@ class SmallComponents(NodeUniformRemoval):
 def plotdistribution(dist, lower_limit, upper_limit):
     x = np.arange(lower_limit, upper_limit)
     y = [dist(k) for k in x]
-    plt.bar(x, y)   # plot circles...
-    plt.title("Probability distribution")
-    plt.xlabel("x")
+    exp = [0.699937,0.21,0.0630486,0.018908,0.00567917,0.00170157,0.00050864,0.0001528,4.477e-05,1.32e-05,4.2e-06,1.29e-06,2.7e-07,1e-07,5e-08,1e-08,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0] 
+    plt.bar(x, [a-b for a,b in zip(y, exp[:len(x)])])   # plot circles...
+    #plt.bar(x, exp[:len(x)])
+    plt.title("Probability distribution (Analytical - Simulations)\n Geometric deg. dist, a=0.3, runs=100, nodes=1M")
+    plt.xlabel("degree")
     plt.ylabel("density")
     plt.grid(True)
     return plt
@@ -490,6 +495,8 @@ def main():
         return degdist(k+1)*(k+1)/degdistmean
     
     #plotdistribution(lambda k: degdist(k)-excdegdist(k), lower_limit, upper_limit).show()
+    #plotdistribution(degdist, lower_limit, upper_limit).show()
+    #quit()
 
     plotter.computeAnalitycalSolution(degdist, excdegdist, lower_limit, upper_limit)
     plt = plotter.getPlot(subtitle)

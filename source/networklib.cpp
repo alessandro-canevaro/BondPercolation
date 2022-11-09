@@ -95,6 +95,20 @@ vector<vector<int>> Network::getNetwork(){
     return network;
 }
 
+vector<double> Network::getDegDist(){
+    vector<double> dist(nodes);
+    for(int i=0; i<nodes; i++){
+        dist[i] = 0;
+    }
+    for(int i=0; i<nodes; i++){
+        dist[network[i].size()] += 1.0;
+    }
+    for(int i=0; i<nodes; i++){
+        dist[i] = dist[i] / (double) nodes;
+    }
+    return dist;
+}
+
 void Network::matchStubs(vector<int> degree_sequence){
     random_device rd;
     mt19937 gen(rd());

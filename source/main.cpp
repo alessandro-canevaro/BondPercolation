@@ -250,10 +250,10 @@ vector<vector<int>> loadEdgeList(string path){
     //cout << "loading" << endl;
     vector<vector<int>> edgelist;
     ifstream myfile(path);
-    int v1, v2;
+    int v1, v2, f;
     if (myfile.is_open()){
         //cout << "file open" << endl;
-        while (myfile >> v1 >> v2){
+        while (myfile >> v1 >> v2 >> f){
             //cout << v1 << endl;
             edgelist.push_back({v1, v2});
         }
@@ -263,6 +263,50 @@ vector<vector<int>> loadEdgeList(string path){
         cout << "Unable to open file";
     } 
     return edgelist;
+}
+
+vector<int> loadFeatureList(string path){
+    //cout << "loading" << endl;
+    vector<int> featlist;
+    ifstream myfile(path);
+    int v1, v2, f;
+    if (myfile.is_open()){
+        //cout << "file open" << endl;
+        while (myfile >> v1 >> v2 >> f){
+            //cout << v1 << endl;
+            featlist.push_back(f);
+        }
+        myfile.close();
+    }
+    else{
+        cout << "Unable to open file";
+    } 
+    return featlist;
+}
+
+void tmp_net_perc(){
+    string output_data_path = "./results/raw/percolation_result.csv";
+    string chunk_folder = "./data/rural_malawi/";
+    vector<int> row, result;
+
+    for(int i=0; i<25; i++){
+        string filename = chunk_folder+"chunck_"+to_string(i)+".txt";
+        if(i < 10){
+            filename = chunk_folder+"chunck_0"+to_string(i)+".txt";
+        }
+        cout << "Processing file: " << filename << endl;
+        vector<vector<int>> edgelist = loadEdgeList(filename);
+        vector<int> featlist = loadFeatureList(filename);
+
+        Network net = Network(edgelist);
+        cout << "net size: " << net.getNetwork().size() << endl;
+        Percolation perc = Percolation(net.getNetwork(), net.getEdgeList());
+
+        row = perc.FeatureEdgeRemoval(featlist, 31);
+        move(row.begin(), row.end(), back_inserter(result));
+    }
+    vector<double> doubleresult(result.begin(), result.end());
+    saveResults(output_data_path, doubleresult);
 }
 
 void percolation(){
@@ -276,9 +320,10 @@ void percolation(){
     cout << "runs: " << runs << ", size: " << network_size << ", type: " << network_type << ", percolation: " << percolation_type << ", p1: " << param1 << endl;
 
     vector<vector<int>> raw(runs);
-    vector<vector<double>> raw_small_comp(runs);
+    vector<vector<int>> raw_small_comp(runs);
+    vector<vector<double>> raw_deg_dist(runs);
     vector<int> data, row;
-    vector<double> result;
+    vector<double> result, result_small_comp;
     int m = round(network_size*0.5*getDegDistMean(network_size, network_type, param1));
     string binomial_data_path = "./data/pmf/binomial/binomialpmf_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv";
     string output_data_path = "./results/raw/percolation_result.csv";
@@ -288,7 +333,7 @@ void percolation(){
 
     double t1 = omp_get_wtime();
     
-    #pragma omp parallel for num_threads(4)
+    //#pragma omp parallel for num_threads(4)
     for(int i=0; i<runs; i++){
         Network net = Network(getDegDist(network_size, network_type, param1));
         if(percolation_type=='l'){
@@ -321,7 +366,10 @@ void percolation(){
             raw[i] = row;
         }
         if(percolation_type=='s'){
-            raw_small_comp[i] = perc.UniformNodeRemovalSmallComp();
+            //raw_deg_dist[i] = net.getDegDist();
+            vector<vector<int>> tmp = perc.UniformNodeRemovalSmallComp();
+            raw[i] = tmp[0];
+            raw_small_comp[i] = tmp[1];
         }
 
         bar.update();
@@ -336,135 +384,32 @@ void percolation(){
     }
     if(percolation_type=='a' || percolation_type=='f' || percolation_type=='c' || percolation_type=='t'){
         result = computeAverage(raw);
+        cout <<"before: " << raw.size() <<" x " << raw[0].size() << "; size: " << result.size() << endl;
     }
     if(percolation_type=='l'){
         binomial_data_path = "./data/pmf/binomial/binomialpmf_n"+to_string(m)+"_b"+to_string(PLOT_BINS)+".csv";
         result = computeBinomialAverage(raw, binomial_data_path);
     }
     if(percolation_type=='s'){
-        result = computeBinomialAverage(raw_small_comp, binomial_data_path);
+        result_small_comp = computeBinomialAverage(raw_small_comp, binomial_data_path);
+        cout << endl;
+        result = computeBinomialAverage(raw, binomial_data_path);
+        cout << endl;
+        for(int idx=0; idx<result.size(); idx++){
+            cout << "idx: " << idx << ", small comp: " << result_small_comp[idx] << ", S: " << result[idx] << ", phi: " << idx/50.0 <<  ", result: " << result_small_comp[idx] / (network_size-result[idx]) << endl;
+            result[idx] = result_small_comp[idx] / (network_size-result[idx]);        
+        }
+        //result = computeAverage(raw_deg_dist);
     }
     saveResults(output_data_path, result);
 
     double t3 = omp_get_wtime();
     cout << "data processing took: " << t3-t2 << " seconds" << endl;
-
-    /*
-    switch(percolation_type){
-    case 'n': //uniform random removal node perc.
-        for(int i=0; i<runs; i++){
-            net = new Network(getDegDist(network_size, network_type, param1));
-            perc = new Percolation(net->getNetwork(), net->getEdgeList());
-            raw.push_back(perc->UniformNodeRemoval());
-            delete net, perc;
-            bar.update();
-        }
-        cout << endl;
-        result = computeBinomialAverage(raw, binomial_data_path);
-        saveResults(output_data_path, result);
-        break;
-
-    case 'a': //targeted attack node perc.
-        for(int i=0; i<runs; i++){
-            net = new Network(getDegDist(network_size, network_type, param1));
-            perc = new Percolation(net->getNetwork(), net->getEdgeList());
-            raw.push_back(perc->HighestDegreeNodeRemoval(20));
-            delete net, perc;
-            bar.update();
-        }
-        cout << endl;
-        result = computeAverage(raw);
-        saveResults(output_data_path, result);
-        break;
-
-    case 'l': //uniform random removal link perc.
-        m = round(network_size*0.5*getDegDistMean(network_size, network_type, param1));
-        cout << "M: " << m << endl;
-        for(int i=0; i<runs; i++){
-            net = new Network(getDegDist(network_size, network_type, param1));
-            net->equalizeEdges(m);
-            perc = new Percolation(net->getNetwork(), net->getEdgeList());
-            raw.push_back(perc->UniformEdgeRemoval());
-            delete net, perc;
-            bar.update();
-        }
-        cout << endl;
-        binomial_data_path = "./data/pmf/binomial/binomialPMF_n"+to_string(m)+"_b"+to_string(PLOT_BINS)+".csv";
-        result = computeBinomialAverage(raw, binomial_data_path);
-        saveResults(output_data_path, result);
-        break;
-
-    case 'f': //Uncorrelated features removal link perc.
-        for(int i=0; i<runs; i++){
-            net = new Network(getDegDist(network_size, network_type, param1));
-            perc = new Percolation(net->getNetwork(), net->getEdgeList());
-            raw.push_back(perc->FeatureEdgeRemoval(8, 20));
-            delete net, perc;
-            bar.update();
-        }
-        cout << endl;
-        result = computeAverage(raw);
-        saveResults(output_data_path, result);
-        break;
-
-    case 'c': //Correlated features removal link perc.
-        for(int i=0; i<runs; i++){
-            net = new Network(getDegDist(network_size, network_type, param1));
-            perc = new Percolation(net->getNetwork(), net->getEdgeList());
-            raw.push_back(perc->CorrFeatureEdgeRemoval(20));
-            delete net, perc;
-            bar.update();
-        }
-        cout << endl;
-        result = computeAverage(raw);
-        saveResults(output_data_path, result);
-        break;
-
-    case 't': //Temporal features removal link perc.
-        for(int i=0; i<runs; i++){
-            net = new Network(getDegDist(network_size, network_type, param1));
-            perc = new Percolation(net->getNetwork(), net->getEdgeList());
-            row.clear();
-            for(int t=0; t<30; t++){ //max t
-                data = perc->TemporalFeatureEdgeRemoval(8, t, 20);
-                move(data.begin(), data.end(), back_inserter(row));
-            }
-            raw.push_back(row);
-            delete net, perc;
-            bar.update();
-        }
-        cout << endl;
-        result = computeAverage(raw);
-        saveResults(output_data_path, result);
-        break;
-
-    case 's': //small components uniform random removal node percolation.
-        for(int i=0; i<runs; i++){
-            net = new Network(getDegDist(network_size, network_type, param1));
-            //net = new Network(loadEdgeList("./data/edge_list_small.txt"));
-            perc = new Percolation(net->getNetwork(), net->getEdgeList());
-            raw_small_comp.push_back(perc->UniformNodeRemovalSmallComp());
-            delete net, perc;
-            bar.update();
-        }
-        cout << endl;
-        
-        //result = computeAverage(raw_small_comp);
-        binomial_data_path = "./data/pmf/binomial/binomialPMF_n"+to_string(m)+"_b"+to_string(PLOT_BINS)+".csv";
-        result = computeBinomialAverage(raw_small_comp, binomial_data_path);
-        saveResults(output_data_path, result);
-        break;
-
-    default:
-        cout << "percolation type not recognized" << endl;
-        break;
-    }
-    */
 }
 
 int main(){   
-    percolation();
-    
+    //percolation();
+    tmp_net_perc();
     cout << endl << "all done" << endl;
     return 0;
 }

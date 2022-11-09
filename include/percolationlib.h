@@ -16,13 +16,15 @@ class Percolation{
 
         vector<int> UniformNodeRemoval();
 
-        vector<double> UniformNodeRemovalSmallComp();
+        vector<vector<int>> UniformNodeRemovalSmallComp();
 
         vector<int> HighestDegreeNodeRemoval(int max_degree);
 
         vector<int> UniformEdgeRemoval();
 
         vector<int> FeatureEdgeRemoval(int mu, int max_feature);
+
+        vector<int> FeatureEdgeRemoval(vector<int> features, int max_feature);
 
         vector<int> CorrFeatureEdgeRemoval(int max_feature);
 
@@ -38,5 +40,5 @@ class Percolation{
         vector<vector<int>> edges;
         FeatureDistribution* feat_dist;
         vector<int> perc_results;
-        vector<double> small_comp_results;
+        vector<int> small_comp_results;
 };

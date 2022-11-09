@@ -41,4 +41,8 @@
 build/
 data/results/
 data/TemporalData/
+data/btc_otc/
+data/btc_alpha/
+data/SFHH
+data/rural_malawi
 CMakeLists.txt

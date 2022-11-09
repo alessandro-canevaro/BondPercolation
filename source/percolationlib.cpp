@@ -34,7 +34,7 @@ vector<int> Percolation::UniformNodeRemoval(){
     return perc_results;
 }
 
-vector<double> Percolation::UniformNodeRemovalSmallComp(){
+vector<vector<int>> Percolation::UniformNodeRemovalSmallComp(){
     random_device rd;
     mt19937 gen(rd());
     vector<int> order(nodes);
@@ -43,7 +43,10 @@ vector<double> Percolation::UniformNodeRemovalSmallComp(){
 
     this->nodePercolation(order, true);
     
-    return small_comp_results;
+    vector<vector<int>> result;
+    result.push_back(perc_results);
+    result.push_back(small_comp_results);
+    return result;
 }
 
 vector<int> Percolation::HighestDegreeNodeRemoval(int max_degree){
@@ -124,6 +127,68 @@ vector<int> Percolation::FeatureEdgeRemoval(int mu, int max_feature){
 
     feat_dist->generateFeatureDist(mu);
     vector<int> features = feat_dist->getFeatures();
+
+    vector<int> indices(order.size());
+    iota(indices.begin(), indices.end(), 0);
+    sort(indices.begin(), indices.end(),
+           [&](int A, int B) -> bool {
+                return features[A] < features[B];
+            });
+    
+    vector<vector<int>> sorted_order;
+    vector<int> sorted_features;
+    for(int idx: indices){
+        sorted_order.push_back(order[idx]);
+        sorted_features.push_back(features[idx]);
+    }
+    
+    this->edgePercolation(sorted_order);
+
+    vector<int> result(max_feature);
+    fill(result.begin(), result.end(), 0);
+    
+    int previous_f = sorted_features[0];
+    result[previous_f] = perc_results[0];
+    //cout << previous_f << " - " << perc_results[0] << endl;
+    int edges = perc_results.size();
+    for(int i = 1; i<edges; i++){
+        //cout << "i: "<< i << ", " << net[order[i]].size() << endl;
+        if(previous_f < sorted_features[i]){
+            previous_f = sorted_features[i];
+            //cout << previous_k << " - " << perc_results[i] << endl;
+            if(previous_f>=max_feature){
+                break;
+            }
+            result[previous_f] = perc_results[i];
+        }
+    }
+    
+    if(result[max_feature-1] == 0){
+        result[max_feature-1] = perc_results[edges-1];
+    }
+
+    int count_zeros = 0;
+    for(int i=0; i<max_feature; i++){
+        if(result[i]==0){
+            count_zeros++;
+        }
+        else{
+            break;
+        }
+    }
+
+    for(int i=max_feature-1; i>count_zeros; i--){
+        if(result[i-1] == 0){
+            result[i-1] = result[i];
+        }
+    }
+    
+    return result;
+    //return perc_results;    
+}
+
+vector<int> Percolation::FeatureEdgeRemoval(vector<int> features, int max_feature){
+    vector<vector<int>> order = edges;
 
     vector<int> indices(order.size());
     iota(indices.begin(), indices.end(), 0);
@@ -332,7 +397,7 @@ void Percolation::nodePercolation(vector<int> node_order, bool small_comp){
     result.push_back(0); //phi=0 -> no nodes
     int max_size = 1;
 
-    vector<double> small_result;
+    vector<int> small_result;
     small_result.push_back(0);
     int s=3;
     int num_clusters_of_size_s = 0;
@@ -396,7 +461,7 @@ void Percolation::nodePercolation(vector<int> node_order, bool small_comp){
         result.push_back(max_size);
 
         if(small_comp){
-            double ps = num_clusters_of_size_s*s/(double) (nodes);
+            int ps = num_clusters_of_size_s*s;///(double) (nodes);
             small_result.push_back(ps);
         }
     }
