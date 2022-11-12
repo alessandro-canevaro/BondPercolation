@@ -1,0 +1,14 @@
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_direct_interaction.edges;direct_interaction;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_physical_association.edges;physical_association;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_dosage_rescue.edges;dosage_rescue;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_association.edges;association;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_colocalization.edges;colocalization;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_phenotypic_enhancement.edges;phenotypic_enhancement;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_phenotypic_suppression.edges;phenotypic_suppression;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_synthetic_rescue.edges;synthetic_rescue;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_synthetic_lethality.edges;synthetic_lethality;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_synthetic_growth_defect.edges;synthetic_growth_defect;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_dosage_lethality.edges;dosage_lethality;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_negative_genetic_interaction.edges;negative_genetic_interaction;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_dosage_growth_defect.edges;dosage_growth_defect;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt
+/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_positive_genetic_interaction.edges;positive_genetic_interaction;/Users/mdd/Desktop/HumanPPI/Homo_sapiens/Homo_sapiens_layout.txt

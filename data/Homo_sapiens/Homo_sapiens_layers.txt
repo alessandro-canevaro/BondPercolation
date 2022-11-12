@@ -1,0 +1,15 @@
+layerID layerLabel
+1 direct_interaction
+2 physical_association
+3 dosage_rescue
+4 association
+5 colocalization
+6 phenotypic_enhancement
+7 phenotypic_suppression
+8 synthetic_rescue
+9 synthetic_lethality
+10 synthetic_growth_defect
+11 dosage_lethality
+12 negative_genetic_interaction
+13 dosage_growth_defect
+14 positive_genetic_interaction

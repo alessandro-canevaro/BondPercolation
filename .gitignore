@@ -45,4 +45,7 @@ data/btc_otc/
 data/btc_alpha/
 data/SFHH
 data/rural_malawi
+data/biogrid
+
 CMakeLists.txt
+git_token.txt
