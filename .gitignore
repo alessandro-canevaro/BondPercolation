@@ -47,5 +47,5 @@ data/SFHH
 data/rural_malawi
 data/biogrid
 
-CMakeLists.txt
+#CMakeLists.txt
 git_token.txt

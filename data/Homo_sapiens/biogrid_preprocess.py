@@ -16,8 +16,41 @@ def func(params):
 
     df = df[df["feature"] != "-"]
 
+    print("i: {}, size: {}".format(i, df.shape))
+    #df['feature'] = df['feature'].apply(lambda x: round(float(x)*10)+50)
+    df['feature'] = df['feature'].apply(lambda x: float(x))
+    df = df[df['feature'].between(-5, 5)]
+    df['feature'] = df['feature'].apply(lambda x: round(x*10)+50)
+    df["feature"].plot(kind="hist")
+    plt.show()
+    print("plotted")
+    quit()
+
     df=df.replace({"from": index_map})
     df=df.replace({"to": index_map})
+
+    df = df.sort_values("to", kind='stable')
+    df = df.sort_values("from", kind='stable')
+
+    edges0 = df.shape[0]
+    df = df.drop(df[df[['from','to']].nunique(axis=1) == 1].index) #remove self edges
+    edges1 = df.shape[0]
+    df = df.loc[pd.DataFrame(np.sort(df[['from','to']],1),index=df.index).drop_duplicates(keep='first').index] #remove multi edges
+    edges2 = df.shape[0]
+    #print("Removed {} self edges and {} multi edges".format(edges0-edges1, edges1-edges2))
+
+    df['from'], df['to'] = np.where(df['from']>df['to'], (df['to'], df['from']), (df['from'], df['to']))
+
+    df = df.sort_values("to", kind='stable')
+    df = df.sort_values("from", kind='stable')
+
+    if i!=11:
+        counter = 0
+        while(counter < max(df[["from", "to"]].max().to_list())):
+            while(counter not in df[["from", "to"]].values):
+                df["from"].loc[df["from"] > counter] -= 1
+                df["to"].loc[df["to"] > counter] -= 1
+            counter += 1
 
 
     if i<10:
@@ -40,7 +73,9 @@ if __name__ == "__main__":
     params = [(i, f) for i, f in enumerate(edge_files)]
     #print(edge_files)
 
-    with alive_bar(len(params), theme='smooth') as bar:
-        with mp.Pool(mp.cpu_count()) as pool:
-            for __ in pool.imap_unordered(func, params):
-                bar()
+    func(params[11])
+
+    #with alive_bar(len(params), theme='smooth') as bar:
+    #    with mp.Pool(mp.cpu_count()) as pool:
+    #        for __ in pool.imap_unordered(func, params):
+    #            bar()
