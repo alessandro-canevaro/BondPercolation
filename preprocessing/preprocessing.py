@@ -21,4 +21,7 @@ class Preprocess:
 
     def writeFiles(self):
         for idx, df in enumerate(self.dataframes):
-            df.to_csv(self.path_to_output + f"{idx}.txt", sep=' ', index=False, header=False)
+            if idx<10:
+                df.to_csv(self.path_to_output + f"chunk_0{idx}.txt", sep=' ', index=False, header=False)
+            else:
+                df.to_csv(self.path_to_output + f"chunk_{idx}.txt", sep=' ', index=False, header=False)
