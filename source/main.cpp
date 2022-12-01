@@ -286,7 +286,7 @@ vector<int> loadFeatureList(string path){
 
 void tmp_net_perc(){
     string output_data_path = "./results/raw/percolation_result.csv";
-    string chunk_folder = "./data/biogrid/";
+    string chunk_folder = "./data/biogrid/processed/";
     vector<int> row, result;
     int files = 1;//5;
     float dx = 0.1;

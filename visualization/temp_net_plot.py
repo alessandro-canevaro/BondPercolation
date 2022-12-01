@@ -11,7 +11,7 @@ from warnings import filterwarnings
 filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
 filterwarnings("ignore", category=DeprecationWarning) 
 
-data_dir = "./data/biogrid/"
+data_dir = "./data/biogrid/processed/"
 exp_data_path = "./results/raw/percolation_result.csv"
 num_files = 1#5
 dx = 0.1
@@ -140,7 +140,9 @@ def main():
     fig_feat.supylabel("Probability")
     fig_feat.suptitle("Feature distribution - 25 windows \n"+"Bitcoin ALPHA trust weighted signed network")
     """
-    plt.show()
+    #plt.show()
+    plt.savefig("./results/figures/biogrid_aggregation.png")
+    print("plot saved")
 
 if __name__ == "__main__":
     import cpuinfo
