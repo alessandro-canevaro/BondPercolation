@@ -3,9 +3,12 @@ import csv
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import multiprocess as mp
 from scipy import optimize
 from scipy.stats import binom, geom, poisson
+from scipy.special import factorial, gammaincc
 from alive_progress import alive_bar
+from tqdm import tqdm
 from warnings import filterwarnings
 import warnings
 warnings.filterwarnings("ignore")
@@ -15,7 +18,7 @@ filterwarnings("ignore", category=DeprecationWarning)
 data_dir = "./data/bitcoin/processed/"
 exp_data_path = "./results/raw/percolation_result.csv"
 num_files = 25
-max_feat = 50
+max_feat = 21
 max_deg = 200
 
 def from_dict_to_func(dist_dict, max_val, nodes=-1):
@@ -29,6 +32,26 @@ def from_dict_to_func(dist_dict, max_val, nodes=-1):
         return lambda k: 0
     dist_list = [val/sum_list for val in dist_list]
     return lambda k: dist_list[k] if 0 <= k <= max_val else 0
+
+def findCorrelations(df):
+    from_degree = df['from'].value_counts().to_dict()
+    to_degree = df['to'].value_counts().to_dict()
+
+    degree = {key: from_degree.get(key, 0) + to_degree.get(key, 0) for key in set(from_degree) | set(to_degree)}
+
+    df['degreesum'] = df.apply(lambda row: degree[row["from"]]+degree[row["to"]], axis=1)
+
+    degreesum_freq = df['degreesum'].value_counts().to_dict()
+    p_sum = lambda s: degreesum_freq[s]/df.shape[0] if s in degreesum_freq else 0
+
+    f_degreesum_freq = {}
+    for s in df['degreesum'].unique():
+        tmp = df.loc[df['degreesum'] == s]
+        f_degreesum_freq[s] = tmp['feature'].value_counts().to_dict()
+
+    p_f_sum = lambda f, s: f_degreesum_freq[s][f]/sum(f_degreesum_freq[s].values()) if s in f_degreesum_freq and f in f_degreesum_freq[s] else 0
+    
+    return lambda f, s: p_f_sum(f, s)*p_sum(s)
 
 class UncorrelatedFeatureEdgePercolation:
     
@@ -77,6 +100,61 @@ class UncorrelatedFeatureEdgePercolation:
         plt_ax.grid(True)
         #return plt
 
+class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
+
+    def __init__(self, net_size, exp_data, pfkk_func=poisson.pmf) -> None:
+        super().__init__(net_size, exp_data)
+
+        self.pfkk_func = pfkk_func
+
+    def computeAnalitycalSolution(self, degdist, excdegdist, lower_limit, upper_limit=100, pgr_bar=None):
+
+        def pfkk(f, m):
+            return self.pfkk_func(f, m)
+
+        def psi(u, k, F0):
+            #a = np.exp(-degdistmean)* sum([(1-u[m-1])*degdistmean**(m-1) / factorial(m-1) * gammaincc(F0, k+m) for m in range(1, upper_limit)])
+            #b = sum([sum([excdegdist(m-1) * pfkk(f, (m+k)) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
+            c = sum([(1-u[m-1])* excdegdist(m-1) * gammaincc(F0, (k+m)) for m in range(1, upper_limit)])
+            return c
+
+        def func(F0):
+            def vecfunc(u):
+                result = np.zeros_like(u)
+                for k in range(1, upper_limit):
+                    result[k-1] = (1-psi(u, k, F0))**(k-1)
+                return u-result
+
+            sol = optimize.root(vecfunc, np.zeros((upper_limit-1, 1))+0.0, method='lm')
+            if not sol.success:
+                print("ERROR")
+
+            W = np.zeros((upper_limit, 1))
+            W[0] = 1
+            for k in range(1, upper_limit):
+                W[k] = (1-psi(sol.x, k, F0))**k
+
+            S = sum([degdist(k)*(1-W[k]) for k in range(0, upper_limit)])
+            return (F0, S[0])
+
+        self.sol_data = [0]*len(self.bins)
+        with tqdm(total=len(self.bins)) as pbar:
+            with mp.Pool(mp.cpu_count()) as pool:
+                for idx, val in pool.imap_unordered(func, self.bins):
+                    #quit()
+                    if(idx==0):
+                        val = 0
+                    self.sol_data[idx] = val
+                    if pgr_bar:
+                        pgr_bar()
+                    pbar.update()
+
+    def getPlot(self, plt_ax, description, shift=0, scale=1):
+        super().getPlot(plt_ax, description, shift, scale)
+        #plt.title("Correlated features edge percolation \n"+description)
+        #plt.xlabel("Maximum Feaure F0 - P(F | k, k') = Poisson(k+k')")
+        #return plt
+
 def plotdistribution(plt_ax, dist, lower_limit, upper_limit, shift=0, scale=1):
     x = np.arange(lower_limit, upper_limit)
     y = [dist(k) for k in x]
@@ -121,10 +199,16 @@ def main():
         def excdegdist(k):
             return degdist(k+1)*(k+1)/degdistmean
 
-        plotter = UncorrelatedFeatureEdgePercolation(nodes, exp_data[i*max_feat:(i+1)*max_feat])#[feat_range[i][0]:feat_range[i][1]])
-        plotter.computeAnalitycalSolution(featdist, degdist, excdegdist, max_deg, None)
+        pfkk = findCorrelations(df)
+        plotter = CorrelatedFeatureEdgePercolation(nodes, exp_data[i*max_feat:(i+1)*max_feat], pfkk)#[feat_range[i][0]:feat_range[i][1]])
+        plotter.computeAnalitycalSolution(degdist, excdegdist, 0, 100, None)
         print(f"axperc[{i//num_cols}, {i%(num_rows)}]")
         plotter.getPlot(ax_perc[i//num_cols, i%(num_rows)], "Bitcoin", -10, 1)
+        
+        #plotter = UncorrelatedFeatureEdgePercolation(nodes, exp_data[i*max_feat:(i+1)*max_feat])#[feat_range[i][0]:feat_range[i][1]])
+        #plotter.computeAnalitycalSolution(featdist, degdist, excdegdist, max_deg, None)
+        #print(f"axperc[{i//num_cols}, {i%(num_rows)}]")
+        #plotter.getPlot(ax_perc[i//num_cols, i%(num_rows)], "Bitcoin", -10, 1)
         #plotdistribution(ax_feat[i//num_cols, i%(1+num_rows)], featdist, 0, max_feat, shift, scale)#-10)
 
     lines, labels = ax_perc[0, 0].get_legend_handles_labels()

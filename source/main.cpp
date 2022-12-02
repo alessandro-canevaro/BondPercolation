@@ -292,7 +292,7 @@ void tmp_net_perc(){
     float dx = 0.1;
     int min_f = -100;
     int max_f = 100;
-    int max_feature = 50;//(int) 2*(max_f/dx)+1;
+    int max_feature = 21;//(int) 2*(max_f/dx)+1;
 
     for(int i=0; i<files; i++){
         string filename = chunk_folder+"chunk_"+to_string(i)+".txt";
