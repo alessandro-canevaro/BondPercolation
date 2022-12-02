@@ -113,10 +113,7 @@ class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
             return self.pfkk_func(f, m)
 
         def psi(u, k, F0):
-            #a = np.exp(-degdistmean)* sum([(1-u[m-1])*degdistmean**(m-1) / factorial(m-1) * gammaincc(F0, k+m) for m in range(1, upper_limit)])
-            #b = sum([sum([excdegdist(m-1) * pfkk(f, (m+k)) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
-            c = sum([(1-u[m-1])* excdegdist(m-1) * gammaincc(F0, (k+m)) for m in range(1, upper_limit)])
-            return c
+            return sum([sum([excdegdist(m-1) * pfkk(f, (m+k)) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
 
         def func(F0):
             def vecfunc(u):
@@ -141,12 +138,7 @@ class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
         with tqdm(total=len(self.bins)) as pbar:
             with mp.Pool(mp.cpu_count()) as pool:
                 for idx, val in pool.imap_unordered(func, self.bins):
-                    #quit()
-                    if(idx==0):
-                        val = 0
                     self.sol_data[idx] = val
-                    if pgr_bar:
-                        pgr_bar()
                     pbar.update()
 
     def getPlot(self, plt_ax, description, shift=0, scale=1):
