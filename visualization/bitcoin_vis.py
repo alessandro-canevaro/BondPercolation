@@ -39,6 +39,22 @@ def findCorrelations(df):
 
     degree = {key: from_degree.get(key, 0) + to_degree.get(key, 0) for key in set(from_degree) | set(to_degree)}
 
+    max_f, max_deg = df["feature"].max(), max(degree.values())
+
+    pfmk = np.zeros((max_f+1, max_deg+1, max_deg+1))
+    for _, row in df.iterrows():
+        pfmk[row["feature"]][degree[row["from"]]][degree[row["to"]]] += 1
+    pfmk = pfmk / df.shape[0]
+    assert abs(np.sum(pfmk) - 1.0) < 1e-5
+
+    return pfmk
+    
+    """
+    from_degree = df['from'].value_counts().to_dict()
+    to_degree = df['to'].value_counts().to_dict()
+
+    degree = {key: from_degree.get(key, 0) + to_degree.get(key, 0) for key in set(from_degree) | set(to_degree)}
+
     df['degreesum'] = df.apply(lambda row: degree[row["from"]]+degree[row["to"]], axis=1)
 
     degreesum_freq = df['degreesum'].value_counts().to_dict()
@@ -52,6 +68,7 @@ def findCorrelations(df):
     p_f_sum = lambda f, s: f_degreesum_freq[s][f]/sum(f_degreesum_freq[s].values()) if s in f_degreesum_freq and f in f_degreesum_freq[s] else 0
     
     return lambda f, s: p_f_sum(f, s), df['degreesum'].max()
+    """
 
 class UncorrelatedFeatureEdgePercolation:
     
@@ -76,8 +93,10 @@ class UncorrelatedFeatureEdgePercolation:
 
             sol = optimize.root(f, 0, method='lm')
             if not sol.success:
-                sol.x=0
+                sol.x=0.0
                 print('raise AssertionError("Solution not found for F0={}".format(F0))')
+            else:
+                sol.x = sol.x[0]
             if sol.x > 1.0:
                 sol.x = 1.0
             self.sol_data.append(1-self.g0(sol.x, degdist, upper_limit))
@@ -102,22 +121,12 @@ class UncorrelatedFeatureEdgePercolation:
 
 class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
 
-    def __init__(self, net_size, exp_data, pfkk_func=poisson.pmf) -> None:
+    def __init__(self, net_size, exp_data) -> None:
         super().__init__(net_size, exp_data)
-
-        self.pfkk_func = pfkk_func
         
-    def computeAnalitycalSolutionCorr(self, degdist, excdegdist, lower_limit, upper_limit=100, pgr_bar=None):
-        
-        def pfkk(f, m):
-            #print(f"f: {f}, m: {m}, pfkk {self.pfkk_func(f, m)}, poisson: {poisson.pmf(f, m)}")
-            return self.pfkk_func(f, m)
-        """
-        def pfkk(f, m):
-            return poisson.pmf(f, m)
-        """
+    def computeAnalitycalSolutionCorr(self, degdist, pf_mk, pm_k, lower_limit, upper_limit=100, pgr_bar=None):
         def psi(u, k, F0):
-            return sum([sum([excdegdist(m-1) * pfkk(f, (m+k)) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
+            return sum([sum([pf_mk(f, m, k) * pm_k(m, k) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
 
         """
         def psi(u, k, F0):
@@ -155,12 +164,12 @@ class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
                         val = 0
                     self.sol_data_corr[idx] = val
                     pbar.update()
-        print(self.sol_data_corr)
+        #print(self.sol_data_corr)
 
     def getPlot(self, plt_ax, description, shift=0, scale=1):
         plt_ax.plot((self.bins+shift)/scale, self.exp_data, label='Experimental results')#, linestyle='none', marker='o', fillstyle='none')
         plt_ax.plot((self.bins+shift)/scale, self.sol_data, label="Uncorrelated")#, marker='o', fillstyle='none')
-        plt_ax.plot((self.bins+shift)/scale, self.sol_data_corr, label="Uncorrelated")#, marker='o', fillstyle='none')
+        plt_ax.plot((self.bins+shift)/scale, self.sol_data_corr, label="Correlated")#, marker='o', fillstyle='none')
         #print(shift, scale, len(self.exp_data))
         if(not self.exp_data):
             return
@@ -196,7 +205,7 @@ def main():
 
     #with alive_bar(num_files*max_feat, theme='smooth') as bar:
     for i, f in enumerate(sorted(glob.glob(data_dir+"*.txt"))):
-        #print("Current File Being Processed is: " + f)
+        print("Current File Being Processed is: ", i)
         df = pd.read_csv(f, sep=" ", names=["from", "to", "feature"])
         #print(df)
 
@@ -218,17 +227,27 @@ def main():
         def excdegdist(k):
             return degdist(k+1)*(k+1)/degdistmean
 
-        pfkk, max_sum = findCorrelations(df)
-        print(max_sum)
+        pfmk_mat = findCorrelations(df)
+
+        pmk_mat = np.sum(pfmk_mat, axis=0)
+        #print(pfmk_mat.shape, pmk_mat.shape)
+
+        pk_mat = np.sum(pmk_mat, axis=0)
+        #print(pmk_mat.shape, pk_mat.shape)
+
+        pf_mk = lambda f, m, k: pfmk_mat[f][m][k]/pmk_mat[m][k] if f<pfmk_mat.shape[0] and m<pfmk_mat.shape[1] and k<pfmk_mat.shape[1] and pmk_mat[m][k]>0.0 else 0.0
+        pm_k = lambda m, k: pmk_mat[m][k]/pk_mat[k] if m<pfmk_mat.shape[1] and k<pfmk_mat.shape[1] and pk_mat[k]>0.0 else 0.0
+
         #a = np.array([[pfkk(i, j) for j in range(100)] for i in range(21)])
         #plt.figure()
         #ax_perc[i//num_cols, i%(num_rows)].imshow(a, cmap='hot', interpolation='nearest')
         #plt.show()
+        print(pfmk_mat.shape[1])
         
-        plotter = CorrelatedFeatureEdgePercolation(nodes, exp_data[i*max_feat:(i+1)*max_feat], pfkk)#[feat_range[i][0]:feat_range[i][1]])
+        plotter = CorrelatedFeatureEdgePercolation(nodes, exp_data[i*max_feat:(i+1)*max_feat])#[feat_range[i][0]:feat_range[i][1]])
         plotter.computeAnalitycalSolution(featdist, degdist, excdegdist, max_deg, None)
-        plotter.computeAnalitycalSolutionCorr(degdist, excdegdist, 0, min(max_sum+1, 100), None)
-        print(f"axperc[{i//num_cols}, {i%(num_rows)}]")
+        plotter.computeAnalitycalSolutionCorr(degdist, pf_mk, pm_k, 0, min(pfmk_mat.shape[1], 50), None)
+        #print(f"axperc[{i//num_cols}, {i%(num_rows)}]")
         plotter.getPlot(ax_perc[i//num_cols, i%(num_rows)], "Bitcoin", -10, 1)
         
         #plotter = UncorrelatedFeatureEdgePercolation(nodes, exp_data[i*max_feat:(i+1)*max_feat])#[feat_range[i][0]:feat_range[i][1]])
@@ -248,7 +267,7 @@ def main():
     fig_feat.supylabel("Probability")
     fig_feat.suptitle("Feature distribution - 25 windows \n"+"Bitcoin ALPHA trust weighted signed network")
     """
-    plt.savefig("./results/figures/bitcoin.png")
+    plt.savefig("./results/figures/bitcoin.pdf")
     plt.show()
     print("plot saved")
 
