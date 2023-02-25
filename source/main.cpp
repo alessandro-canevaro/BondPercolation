@@ -358,10 +358,10 @@ void percolation(){
             raw[i] = perc.UniformEdgeRemoval();
         }
         if(percolation_type=='f'){
-            raw[i] = perc.FeatureEdgeRemoval(8, 20);
+            raw[i] = perc.FeatureEdgeRemoval(8, 21);
         }
         if(percolation_type=='c'){
-            raw[i] = perc.CorrFeatureEdgeRemoval(20);
+            raw[i] = perc.CorrFeatureEdgeRemoval(21);
         }
         if(percolation_type=='t'){
             row.clear();
@@ -414,8 +414,8 @@ void percolation(){
 }
 
 int main(){   
-    //percolation();
-    tmp_net_perc();
+    percolation();
+    //tmp_net_perc();
     cout << endl << "all done" << endl;
     return 0;
 }

@@ -39,9 +39,12 @@ void FeatureDistribution::generateCorrFeatureDist(){
     for(int i=0; i<num_edges; i++){
         k1 = net[edge_list[i][0]].size();
         k2 = net[edge_list[i][1]].size();
-        poisson_distribution<> d((k1+k2));
+        poisson_distribution<> d(50/(k1+k2));
         feat.push_back(d(gen));
     }
+    //shuffle for uncorrelated case
+    random_shuffle(feat.begin(), feat.end());
+
     features = {feat};
 }
 
