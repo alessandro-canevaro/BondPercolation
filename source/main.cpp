@@ -284,37 +284,6 @@ vector<int> loadFeatureList(string path){
     return featlist;
 }
 
-void tmp_net_perc(){
-    string output_data_path = "./results/raw/percolation_result.csv";
-    string chunk_folder = "./data/bitcoin/processed/";
-    vector<int> row, result;
-    int files = 25;//1;//5;
-    float dx = 0.1;
-    int min_f = -100;
-    int max_f = 100;
-    int max_feature = 21;//(int) 2*(max_f/dx)+1;
-
-    for(int i=0; i<files; i++){
-        string filename = chunk_folder+"chunk_"+to_string(i)+".txt";
-        if(i < 10){
-            filename = chunk_folder+"chunk_0"+to_string(i)+".txt";
-        }
-        //filename = chunk_folder+"aggregation.txt";
-        cout << "Processing file: " << filename << endl;
-        vector<vector<int>> edgelist = loadEdgeList(filename);
-        vector<int> featlist = loadFeatureList(filename);
-
-        Network net = Network(edgelist);
-        cout << "net size: " << net.getNetwork().size() << endl;
-        Percolation perc = Percolation(net.getNetwork(), net.getEdgeList());
-
-        row = perc.FeatureEdgeRemoval(featlist, max_feature);
-        move(row.begin(), row.end(), back_inserter(result));
-    }
-    vector<double> doubleresult(result.begin(), result.end());
-    saveResults(output_data_path, doubleresult);
-}
-
 void percolation(){
     vector<string> exp_params = parseGiantCompConfigFile(CONFIG_FILE_PATH);
 
@@ -342,40 +311,14 @@ void percolation(){
     //#pragma omp parallel for num_threads(4)
     for(int i=0; i<runs; i++){
         Network net = Network(getDegDist(network_size, network_type, param1));
-        if(percolation_type=='l'){
-            net.equalizeEdges(m);
-        }
 
         Percolation perc = Percolation(net.getNetwork(), net.getEdgeList());
-        
-        if(percolation_type=='n'){
-            raw[i] = perc.UniformNodeRemoval();
-        }
-        if(percolation_type=='a'){
-            raw[i] = perc.HighestDegreeNodeRemoval(20);
-        }
-        if(percolation_type=='l'){
-            raw[i] = perc.UniformEdgeRemoval();
-        }
+
         if(percolation_type=='f'){
             raw[i] = perc.FeatureEdgeRemoval(8, 21);
         }
         if(percolation_type=='c'){
             raw[i] = perc.CorrFeatureEdgeRemoval(21);
-        }
-        if(percolation_type=='t'){
-            row.clear();
-            for(int t=0; t<30; t++){ //max t
-                data = perc.TemporalFeatureEdgeRemoval(8, t, 20);
-                move(data.begin(), data.end(), back_inserter(row));
-            }
-            raw[i] = row;
-        }
-        if(percolation_type=='s'){
-            //raw_deg_dist[i] = net.getDegDist();
-            vector<vector<int>> tmp = perc.UniformNodeRemovalSmallComp();
-            raw[i] = tmp[0];
-            raw_small_comp[i] = tmp[1];
         }
 
         bar.update();
@@ -385,28 +328,11 @@ void percolation(){
     double t2 = omp_get_wtime();
     cout << "percolation took: " << t2-t1 << " seconds" << endl;
 
-    if(percolation_type=='n'){
-        result = computeBinomialAverage(raw, binomial_data_path);
-    }
     if(percolation_type=='a' || percolation_type=='f' || percolation_type=='c' || percolation_type=='t'){
         result = computeAverage(raw);
         cout <<"before: " << raw.size() <<" x " << raw[0].size() << "; size: " << result.size() << endl;
     }
-    if(percolation_type=='l'){
-        binomial_data_path = "./data/pmf/binomial/binomialpmf_n"+to_string(m)+"_b"+to_string(PLOT_BINS)+".csv";
-        result = computeBinomialAverage(raw, binomial_data_path);
-    }
-    if(percolation_type=='s'){
-        result_small_comp = computeBinomialAverage(raw_small_comp, binomial_data_path);
-        cout << endl;
-        result = computeBinomialAverage(raw, binomial_data_path);
-        cout << endl;
-        for(int idx=0; idx<result.size(); idx++){
-            cout << "idx: " << idx << ", small comp: " << result_small_comp[idx] << ", S: " << result[idx] << ", phi: " << idx/50.0 <<  ", result: " << result_small_comp[idx] / (network_size-result[idx]) << endl;
-            result[idx] = result_small_comp[idx] / (network_size-result[idx]);        
-        }
-        //result = computeAverage(raw_deg_dist);
-    }
+
     saveResults(output_data_path, result);
 
     double t3 = omp_get_wtime();

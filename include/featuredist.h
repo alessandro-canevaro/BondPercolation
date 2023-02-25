@@ -15,14 +15,11 @@ class FeatureDistribution{
 
         void generateCorrFeatureDist();
 
-        void generateTemporalFeatureDist(int mu);
-
         vector<int> getFeatures(int t=0);
         
     protected:
 
         void getNet();
-        void ComputeTemporalFeature(int max_t, int min_f, int max_f, double A, double k);
         vector<vector<int>> transpose(vector<vector<int>> data);
 
         int num_edges;

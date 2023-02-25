@@ -14,21 +14,11 @@ class Percolation{
     public:
         Percolation(vector<vector<int>> network, vector<vector<int>> edge_list);
 
-        vector<int> UniformNodeRemoval();
-
-        vector<vector<int>> UniformNodeRemovalSmallComp();
-
-        vector<int> HighestDegreeNodeRemoval(int max_degree);
-
-        vector<int> UniformEdgeRemoval();
-
         vector<int> FeatureEdgeRemoval(int mu, int max_feature);
 
         vector<int> FeatureEdgeRemoval(vector<int> features, int max_feature);
 
         vector<int> CorrFeatureEdgeRemoval(int max_feature);
-
-        vector<int> TemporalFeatureEdgeRemoval(int mu, int t, int max_feature);
 
     protected:
 
