@@ -295,22 +295,25 @@ void percolation(){
     cout << "runs: " << runs << ", size: " << network_size << ", type: " << network_type << ", percolation: " << percolation_type << ", p1: " << param1 << endl;
 
     vector<vector<int>> raw(runs);
-    vector<vector<int>> raw_small_comp(runs);
+    vector<vector<int>> raw_corr(runs);
+    vector<vector<int>> raw_uncorr(runs);
     vector<vector<double>> raw_deg_dist(runs);
+    vector<vector<double>> raw_joint_dist(runs);
     vector<int> data, row;
-    vector<double> result, result_small_comp;
     int m = round(network_size*0.5*getDegDistMean(network_size, network_type, param1));
     string binomial_data_path = "./data/pmf/binomial/binomialpmf_n"+to_string(network_size)+"_b"+to_string(PLOT_BINS)+".csv";
-    string output_data_path = "./results/raw/percolation_result.csv";
+    
     progressbar bar(runs);
 
     vector<double> test;
 
     double t1 = omp_get_wtime();
     
-    //#pragma omp parallel for num_threads(4)
+    #pragma omp parallel for num_threads(24) schedule(dynamic)
     for(int i=0; i<runs; i++){
         Network net = Network(getDegDist(network_size, network_type, param1));
+
+        raw_deg_dist[i] = net.getDegDist();
 
         Percolation perc = Percolation(net.getNetwork(), net.getEdgeList());
 
@@ -318,8 +321,11 @@ void percolation(){
             raw[i] = perc.FeatureEdgeRemoval(8, 21);
         }
         if(percolation_type=='c'){
-            raw[i] = perc.CorrFeatureEdgeRemoval(21);
+            raw_corr[i] = perc.CorrFeatureEdgeRemoval(21, true);
+            raw_uncorr[i] = perc.CorrFeatureEdgeRemoval(21, false);
         }
+
+        raw_joint_dist[i] = perc.getJointDistribution();
 
         bar.update();
     }
@@ -328,12 +334,10 @@ void percolation(){
     double t2 = omp_get_wtime();
     cout << "percolation took: " << t2-t1 << " seconds" << endl;
 
-    if(percolation_type=='a' || percolation_type=='f' || percolation_type=='c' || percolation_type=='t'){
-        result = computeAverage(raw);
-        cout <<"before: " << raw.size() <<" x " << raw[0].size() << "; size: " << result.size() << endl;
-    }
-
-    saveResults(output_data_path, result);
+    saveResults("./results/raw/perco_result_corr.csv", computeAverage(raw_corr));
+    saveResults("./results/raw/perco_result_uncorr.csv", computeAverage(raw_uncorr));
+    saveResults("./results/raw/perco_result_degdist.csv", computeAverage(raw_deg_dist));
+    saveResults("./results/raw/perco_result_jointdist.csv", computeAverage(raw_joint_dist));
 
     double t3 = omp_get_wtime();
     cout << "data processing took: " << t3-t2 << " seconds" << endl;

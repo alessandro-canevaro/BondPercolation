@@ -149,11 +149,13 @@ vector<int> Percolation::FeatureEdgeRemoval(vector<int> features, int max_featur
     //return perc_results;    
 }
 
-vector<int> Percolation::CorrFeatureEdgeRemoval(int max_feature){
+vector<int> Percolation::CorrFeatureEdgeRemoval(int max_feature, bool correlated){
     vector<vector<int>> order = edges;
 
-    feat_dist->generateCorrFeatureDist();
+    feat_dist->generateCorrFeatureDist(correlated);
     vector<int> features = feat_dist->getFeatures();
+
+    joint_distribution = feat_dist->getJointDistribution();
 
     vector<int> indices(order.size());
     iota(indices.begin(), indices.end(), 0);
@@ -212,6 +214,10 @@ vector<int> Percolation::CorrFeatureEdgeRemoval(int max_feature){
     
     return result;
     //return perc_results;    
+}
+
+vector<double> Percolation::getJointDistribution(){
+    return joint_distribution;
 }
 
 void Percolation::nodePercolation(vector<int> node_order, bool small_comp){

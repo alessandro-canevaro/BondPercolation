@@ -18,7 +18,9 @@ class Percolation{
 
         vector<int> FeatureEdgeRemoval(vector<int> features, int max_feature);
 
-        vector<int> CorrFeatureEdgeRemoval(int max_feature);
+        vector<int> CorrFeatureEdgeRemoval(int max_feature, bool correlated=true);
+
+        vector<double> getJointDistribution();
 
     protected:
 
@@ -31,4 +33,6 @@ class Percolation{
         FeatureDistribution* feat_dist;
         vector<int> perc_results;
         vector<int> small_comp_results;
+
+        vector<double> joint_distribution;
 };

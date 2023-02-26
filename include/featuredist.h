@@ -13,9 +13,11 @@ class FeatureDistribution{
 
         void generateFeatureDist(int mu);
 
-        void generateCorrFeatureDist();
+        void generateCorrFeatureDist(bool correlated=true);
 
         vector<int> getFeatures(int t=0);
+
+        vector<double> getJointDistribution();
         
     protected:
 
@@ -27,5 +29,7 @@ class FeatureDistribution{
         vector<vector<int>> edge_list;
         vector<vector<int>> features;
         vector<vector<int>> functions;
+
+        vector<double> joint_distribution;
 
 };

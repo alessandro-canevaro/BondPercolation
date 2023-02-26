@@ -29,23 +29,42 @@ void FeatureDistribution::generateFeatureDist(int mu){
     features = {feat};
 }
 
-void FeatureDistribution::generateCorrFeatureDist(){
+void FeatureDistribution::generateCorrFeatureDist(bool correlated){
     random_device rd;
     mt19937 gen(rd());
     this->getNet();
+    vector<double> joint_dist(21*50); //max_feat * f(k, j)
 
     vector<int> feat;
+    int curr_feat;
     int k1, k2;
     for(int i=0; i<num_edges; i++){
         k1 = net[edge_list[i][0]].size();
         k2 = net[edge_list[i][1]].size();
         poisson_distribution<> d(50/(k1+k2));
-        feat.push_back(d(gen));
+        curr_feat = d(gen);
+        feat.push_back(curr_feat);
+        joint_dist[curr_feat+21*(50/(k1+k2))] += 1;
     }
     //shuffle for uncorrelated case
-    random_shuffle(feat.begin(), feat.end());
+    if (!correlated){
+        random_shuffle(feat.begin(), feat.end());
+    }
 
     features = {feat};
+
+    //joint distribution
+    double sum = accumulate(joint_dist.begin(), joint_dist.end(), 0.0);
+    for(int i = 0; i < joint_dist.size(); i++){
+        if (joint_dist[i] > 0.0){
+            joint_dist[i] = joint_dist[i]/sum;
+        }
+    } 
+    joint_distribution = joint_dist;
+}
+
+vector<double> FeatureDistribution::getJointDistribution(){
+    return joint_distribution;
 }
 
 void FeatureDistribution::getNet(){
