@@ -334,10 +334,10 @@ void percolation(){
     double t2 = omp_get_wtime();
     cout << "percolation took: " << t2-t1 << " seconds" << endl;
 
-    saveResults("./results/raw/perco_result_corr.csv", computeAverage(raw_corr));
-    saveResults("./results/raw/perco_result_uncorr.csv", computeAverage(raw_uncorr));
-    saveResults("./results/raw/perco_result_degdist.csv", computeAverage(raw_deg_dist));
-    saveResults("./results/raw/perco_result_jointdist.csv", computeAverage(raw_joint_dist));
+    saveResults("./results/raw/perc_result_corr.csv", computeAverage(raw_corr));
+    saveResults("./results/raw/perc_result_uncorr.csv", computeAverage(raw_uncorr));
+    saveResults("./results/raw/perc_result_degdist.csv", computeAverage(raw_deg_dist));
+    saveResults("./results/raw/perc_result_jointdist.csv", computeAverage(raw_joint_dist));
 
     double t3 = omp_get_wtime();
     cout << "data processing took: " << t3-t2 << " seconds" << endl;

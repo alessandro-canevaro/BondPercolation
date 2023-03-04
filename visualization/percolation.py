@@ -12,6 +12,7 @@ rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})#, 'size': 14
 rc('text', usetex=True)
 
 from scipy import optimize
+from scipy.linalg import eig
 from scipy.stats import binom, geom, poisson
 from scipy.misc import derivative
 from scipy.special import factorial, gammaincc#, gamma, gammaincc
@@ -213,14 +214,11 @@ class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
 
         self.sol_data = [0]*len(self.bins)
         with tqdm(total=len(self.bins)) as pbar:
-        #with alive_bar(len(self.bins), theme='smooth') as bar:
             with mp.Pool(mp.cpu_count()) as pool:
                 for idx, val in pool.imap_unordered(func, self.bins):
-                    #quit()
                     if(idx==0):
                         val = 0
                     self.sol_data[idx] = val
-                    #bar()
                     pbar.update()
 
 
@@ -229,13 +227,97 @@ class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
         plt.title("Correlated features edge percolation \n"+description)
         plt.xlabel("Maximum Feaure F0 - P(F | k, k') = Poisson(a//(k+k'))")
         return plt
+    
+
+def computeAnalitycalSolution(degdist, excdegdist, joint_dist, bins, lower_limit=0, upper_limit=10):
+
+    def pfkk(f, m):
+        print(joint_dist(f, m), poisson.pmf(f, m))
+        return poisson.pmf(f, m)
+    
+    def pf(f, m):
+        return sum([excdegdist(m-1) * joint_dist(f, m) for m in range(1, upper_limit)])
+
+    def psi(u, k, F0):
+        #return sum([(1-u[m-1])* excdegdist(m-1) * gammaincc(F0, 50//(k+m)) for m in range(1, upper_limit)])
+        return sum([sum([excdegdist(m-1) * joint_dist(f, 50//(m+k)) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
+
+    def func(F0):
+        def vecfunc(u):
+            result = np.zeros_like(u)
+            for k in range(1, upper_limit):
+                result[k-1] = (1-psi(u, k, F0))**(k-1)
+            return u-result
+
+        sol = optimize.root(vecfunc, np.zeros((upper_limit-1, 1))+0.0, method='lm')
+        if not sol.success:
+            print("ERROR")
+
+        W = np.zeros((upper_limit, 1))
+        W[0] = 1
+        for k in range(1, upper_limit):
+            W[k] = (1-psi(sol.x, k, F0))**k
+
+        S = sum([degdist(k)*(1-W[k]) for k in range(0, upper_limit)])
+        return (F0, S[0])
+
+    sol_data = [0]*len(bins)
+    with tqdm(total=len(bins)) as pbar:
+        with mp.Pool(mp.cpu_count()) as pool:
+            for idx, val in pool.imap_unordered(func, bins):
+                sol_data[idx] = val
+                pbar.update()
+    return sol_data
+
+def plot(exp_data_corr, corr_sol, exp_data_uncorr, uncorr_sol, bins):
+    matplotlib.rcParams.update({'font.size': 18})
+    matplotlib.rc('xtick', labelsize=16) 
+    matplotlib.rc('ytick', labelsize=16) 
+
+    plt.plot(bins, corr_sol,    markersize=8, linestyle='dashed', color="gray", marker='.', label="Analytical solution")
+    plt.plot(bins, uncorr_sol,       markersize=8, linestyle='dashed', color="gray", marker='.')
+
+    pos_corr_sol = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.409814487374206e-16, 0.2321158969459163, 0.7261132196671727, 0.8669347079606387, 0.9121400231551087, 0.9283158705985243, 0.9347521444010407, 0.9375880143371299, 0.9389590027544457, 0.9396570929453226, 0.9400188035169329, 0.9402076320439814, 0.9403058790597177, 0.9403566498138933]
+    pos_uncorr_sol = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2290688437191313, 0.5590733894578962, 0.7240345243062353, 0.8121791082222132, 0.8619532873322828, 0.8914101556342454, 0.9094241763489905, 0.9207193797387009, 0.927913797899869, 0.9325293391148012, 0.9354855609014825, 0.9373671155659784, 0.9385586601665219, 0.9393001932415312]
+    plt.plot(bins, pos_corr_sol,    markersize=8, linestyle='dashed', color="gray", marker='.')
+    plt.plot(bins, pos_uncorr_sol,       markersize=8, linestyle='dashed', color="gray", marker='.')
+    #plt.plot(bins, data_neg_sf,       markersize=8, linestyle='dashed', color="gray", marker='.')
+
+    plt.plot(bins, exp_data_corr,    marker='o', fillstyle='none', linestyle='none', color="#1b9e77", markeredgewidth=2, markersize=6, label='Neg. Corr.')
+    plt.plot(bins, exp_data_uncorr,       marker='s', fillstyle='none', linestyle='none', color="#d95f02", markeredgewidth=2, markersize=6, label='Neg. Uncorr.')
+    #plt.plot(bins, plot_neg_sf,       marker='^', fillstyle='none', linestyle='none', color="#7570b3", markeredgewidth=2, markersize=6, label='Negatively corr.')
+
+    pos_exp_data_corr = [0.0, 2.9100000000000003e-05, 3.85e-05, 5.33e-05, 8.060000000000001e-05, 0.0001319, 0.00027079999999999997, 0.0009773, 0.2395, 0.727171, 0.8661989999999999, 0.910981, 0.926985, 0.9333410000000001, 0.936174, 0.9375560000000001, 0.938246, 0.938607, 0.938789, 0.9388810000000001, 0.938932]
+    pos_exp_data_uncorr = [0.0, 3.0299999999999998e-05, 4.2999999999999995e-05, 7.14e-05, 0.00012880000000000001, 0.00032399999999999996, 0.0017981, 0.243753, 0.54951, 0.715322, 0.805996, 0.857694, 0.8881739999999999, 0.9068989999999999, 0.918547, 0.925991, 0.930833, 0.933863, 0.935812, 0.937038, 0.937806]
+    plt.plot(bins, pos_exp_data_corr,    marker='o', fillstyle='none', linestyle='none', color="#7570b3", markeredgewidth=2, markersize=6, label='Pos. Corr.')
+    plt.plot(bins, pos_exp_data_uncorr,       marker='s', fillstyle='none', linestyle='none', color="#e7298a", markeredgewidth=2, markersize=6, label='Pos. Uncorr.')
+    
+    plt.rc('legend', fontsize=12)#, fontsize=12)
+
+    plt.xlim((-0.5, len(bins)-0.5))
+    plt.ylim((-0.1, 1.1))
+    plt.title("Corr. vs Uncorr. features edge percolation \n ER network k = 3; n=100K; runs=100")
+    plt.legend(loc='upper left', frameon=False)
+    plt.xlabel("Maximum Feature F0")
+    plt.ylabel("Size of giant cluster")
+    plt.xticks(list(range(0, len(bins)+1, 2)))
+    return plt
+
+def criticalpoint(bins, excdegdist, jointdist, upper_limit=10):
+    upper_limit = 10
+    G = np.zeros((upper_limit, upper_limit))
+    for i in range(upper_limit):
+        for j in range(upper_limit):
+            G[i, j] = (i)*excdegdist(i)*sum([jointdist(f, 50//((i+1)+(j+1))) for f in range(0, len(bins))])
+    eigenvalues, eigenvectors = eig(G)
+    print(eigenvalues.shape, eigenvectors.shape)
 
 def main():
     lower_limit = 0
     upper_limit = 50
-    C = 1
-    exp_data_path = "./results/raw/percolation_result.csv"
+    data_dir = "./results/raw/"
 
+    #load configuration file
     with open("./experiments/test.yaml") as file:
         params = yaml.load(file, Loader=yaml.FullLoader)
         net_size = int(params['network_size'])
@@ -243,24 +325,21 @@ def main():
         perc_type = params['percolation_type']
         param1 = float(params['param1'])
 
-    plotter = {'n': NodeUniformRemoval, #node percolation uniform random removal
-               'f': UncorrelatedFeatureEdgePercolation, #edge percolation uncorrelated features
-               'c': CorrelatedFeatureEdgePercolation, #edge percolation correlated features
-               '': None}[perc_type](net_size, exp_data_path)
+    #load experimental data (corr)
+    with open(data_dir+"perc_result_corr.csv") as file:
+        exp_data_corr = next(csv.reader(file))
+    exp_data_corr = [float(i)/net_size for i in exp_data_corr]
+    bins = np.arange(0, len(exp_data_corr))
 
-    if net_type == 'p':
-        upper_limit = int(net_size**0.5)+1
-        C = sum([ks**(-param1) for ks in range(lower_limit, upper_limit) if ks>=2])
+    #load experimental data (uncorr)
+    with open(data_dir+"perc_result_uncorr.csv") as file:
+        exp_data_uncorr = next(csv.reader(file))
+    exp_data_uncorr = [float(i)/net_size for i in exp_data_uncorr]
 
-    subtitle = {'b': "ER network ⟨k⟩ = {:.1f}; n={}; runs={}".format(net_size*param1, net_size, params['runs']),
-                'p': "SF network α = {:.1f}; n={}; runs={}".format(param1, net_size, params['runs']),
-                'g': "Geometric degree dist. network a = {:.1f}; n={}; runs={}".format(param1, net_size, params['runs']),
-                'f': "Fixed degree network k = {:.1f}; n={}; runs={}".format(int(param1), net_size, params['runs'])}[net_type]
-
-    degdist = {'b': lambda k: binom.pmf(k, net_size, param1),
-               'p': lambda k: (k**(-param1)/C) if k>=2 else 0,
-               'g': lambda k: geom.pmf(k+1, 1-param1),
-               'f': lambda k: 1 if k==int(param1) else 0}[net_type]
+    #load deg dist
+    with open(data_dir+"perc_result_degdist.csv") as file:
+        deg_dist_list = next(csv.reader(file))
+    degdist = lambda k: float(deg_dist_list[k])
 
     degdistmean = sum([k*degdist(k) for k in range(lower_limit, upper_limit)])
     print("deg. dist. mean:", degdistmean)
@@ -268,19 +347,26 @@ def main():
     def excdegdist(k):
         return degdist(k+1)*(k+1)/degdistmean
     
-    #plotdistribution(lambda k: degdist(k)-excdegdist(k), lower_limit, upper_limit).show()
-    #plotdistribution(degdist, lower_limit, upper_limit).show()
-    #quit()
+    #load joint dist:
+    with open(data_dir+"perc_result_jointdist.csv") as file:
+        joint_dist_list = next(csv.reader(file))
+    jointdist = lambda k, m: float(joint_dist_list[21*m+k]) if m < 200 and k < 21 else print("mk", m, k)
 
-    plotter.computeAnalitycalSolution(degdist, excdegdist, lower_limit, upper_limit)
-    #plotter.computeAnalitycalSolutionUnrolled(degdist, excdegdist, lower_limit, upper_limit)
 
-    
-    plt = plotter.getPlot(subtitle)
-    #plt.savefig("./results/figures/node_perc_giant_cluster_exp_{}.png".format(0))
-    #plt.savefig("./results/figures/inkscape_test_{}.pdf".format(0))
-    plt.savefig("./results/figures/inkscape_test__1_SF.pdf")
-    #plt.show()
+    #criticalpoint(bins, excdegdist, jointdist)
+
+    uncorr_joint_dist_list = [sum([sum([excdegdist(m-1)*excdegdist(k-1) * jointdist(f, 50//(m+k)) for m in range(1, upper_limit)]) for k in range(1, upper_limit)]) for f in range(21)]
+    uncorr_jointdist = lambda k, m: uncorr_joint_dist_list[k]
+
+    corr_sol = computeAnalitycalSolution(degdist, excdegdist, jointdist, bins, lower_limit=0, upper_limit=upper_limit)
+    uncorr_sol = computeAnalitycalSolution(degdist, excdegdist, uncorr_jointdist, bins, lower_limit=0, upper_limit=upper_limit)
+    print("corr sol", corr_sol)
+    print("corr exp", exp_data_corr)
+    print("uncorr sol", uncorr_sol)
+    print("uncorr exp", exp_data_uncorr)
+
+    plt = plot(exp_data_corr, corr_sol, exp_data_uncorr, uncorr_sol, bins)
+    plt.savefig("./results/figures/ER_corr_vs_uncorr.pdf")
 
 if __name__ == "__main__":
     main()
