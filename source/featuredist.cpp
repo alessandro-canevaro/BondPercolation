@@ -47,7 +47,7 @@ void FeatureDistribution::generateCorrFeatureDist(bool correlated){
     for(int i=0; i<num_edges; i++){
         k1 = net[edge_list[i][0]].size();
         k2 = net[edge_list[i][1]].size();
-        m = 50/(k1+k2);
+        m = 75/(k1+k2);
         if (m >= 200){
             m=199;
         }

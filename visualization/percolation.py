@@ -240,7 +240,7 @@ def computeAnalitycalSolution(degdist, excdegdist, joint_dist, bins, lower_limit
 
     def psi(u, k, F0):
         #return sum([(1-u[m-1])* excdegdist(m-1) * gammaincc(F0, 50//(k+m)) for m in range(1, upper_limit)])
-        return sum([sum([excdegdist(m-1) * joint_dist(f, 50//(m+k)) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
+        return sum([sum([excdegdist(m-1) * joint_dist(f, int(75//(m+k))) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
 
     def func(F0):
         def vecfunc(u):
@@ -269,52 +269,68 @@ def computeAnalitycalSolution(degdist, excdegdist, joint_dist, bins, lower_limit
                 pbar.update()
     return sol_data
 
-def plot(exp_data_corr, corr_sol, exp_data_uncorr, uncorr_sol, bins):
+def plot(exp_data_corr, corr_sol, exp_data_uncorr, uncorr_sol, crit_val_corr, crit_val_uncorr, bins):
     matplotlib.rcParams.update({'font.size': 18})
     matplotlib.rc('xtick', labelsize=16) 
     matplotlib.rc('ytick', labelsize=16) 
 
-    plt.plot(bins, corr_sol,    markersize=8, linestyle='dashed', color="gray", marker='.', label="Analytical solution")
-    plt.plot(bins, uncorr_sol,       markersize=8, linestyle='dashed', color="gray", marker='.')
+    plt.plot(bins,  [0.0, 0.1026957070378389, 0.20085718626253904, 0.3007805365163311, 0.39359209212555957, 0.48027123928461074, 0.5618846904242141, 0.638477226087787, 0.7091668502146844, 0.7733590392353925, 0.8300421618706672, 0.8787014477399627, 0.9184171168942932, 0.9489188599670063, 0.9707215052532053, 0.9845534591496485, 0.9925293405650949, 0.9966531178649882, 0.9985353103748921, 0.999309759877625, 0.9995918526276215],    markersize=8, linestyle='dashed', color="#1b9e77", marker='o', label="Neg. Corr. a=50")
+    plt.axvline(x=0, ymin=-0.1, ymax=0.5, ls=":", color="#1b9e77")
 
-    pos_corr_sol = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.409814487374206e-16, 0.2321158969459163, 0.7261132196671727, 0.8669347079606387, 0.9121400231551087, 0.9283158705985243, 0.9347521444010407, 0.9375880143371299, 0.9389590027544457, 0.9396570929453226, 0.9400188035169329, 0.9402076320439814, 0.9403058790597177, 0.9403566498138933]
-    pos_uncorr_sol = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2290688437191313, 0.5590733894578962, 0.7240345243062353, 0.8121791082222132, 0.8619532873322828, 0.8914101556342454, 0.9094241763489905, 0.9207193797387009, 0.927913797899869, 0.9325293391148012, 0.9354855609014825, 0.9373671155659784, 0.9385586601665219, 0.9393001932415312]
-    plt.plot(bins, pos_corr_sol,    markersize=8, linestyle='dashed', color="gray", marker='.')
-    plt.plot(bins, pos_uncorr_sol,       markersize=8, linestyle='dashed', color="gray", marker='.')
-    #plt.plot(bins, data_neg_sf,       markersize=8, linestyle='dashed', color="gray", marker='.')
+    plt.plot(bins, [0.0, 0.0, 7.997320672359368e-15, 0.0776870512995993, 0.22234118572296369, 0.3735693551247041, 0.5168342022861753, 0.6434603572379312, 0.7485707090994133, 0.8312549313094032, 0.892498631926509, 0.9354233812884217, 0.9635103072267085, 0.9806806841554889, 0.9904818820835773, 0.9955423880624578, 0.9979760888596761, 0.9990586276784044, 0.9994961718872345, 0.9996601716824068, 0.999716067280255],       markersize=8, linestyle='dashed', color="#1b9e77", marker='s', label="Neg. Uncorr. a=50")
+    plt.axvline(x=2, ymin=-0.1, ymax=0.5, ls=":", color="#1b9e77")
 
-    plt.plot(bins, exp_data_corr,    marker='o', fillstyle='none', linestyle='none', color="#1b9e77", markeredgewidth=2, markersize=6, label='Neg. Corr.')
-    plt.plot(bins, exp_data_uncorr,       marker='s', fillstyle='none', linestyle='none', color="#d95f02", markeredgewidth=2, markersize=6, label='Neg. Uncorr.')
+    plt.plot(bins, [0.0, 0.2571440101427628, 0.42852242904972554, 0.5840980636780355, 0.7126657551481604, 0.8159555982169574, 0.8940433598382426, 0.9467330199993084, 0.9770950533091403, 0.9916254726797319, 0.9972845024748884, 0.9991017471903405, 0.9995805212249913, 0.999689300191317, 0.9997101010069707, 0.999713733707318, 0.9997143225310128, 0.9997144103650822, 0.9997144252177469, 0.9997144279647544, 0.9997144286130754],    markersize=8, linestyle='dashed', color="#d95f02", marker='o', label="Neg. Corr. a=25")
+    plt.axvline(x=0, ymin=-0.1, ymax=0.5, ls=":", color="#d95f02")
+
+    plt.plot(bins, [0.0, 0.027675598696947367, 0.2885827958220923, 0.555815029037744, 0.7522132439666149, 0.8758844347865195, 0.944641688869535, 0.9781107466434048, 0.9922944004042672, 0.9975007966910513, 0.9991439811843683, 0.9995953471346621, 0.9997019023823654, 0.9997243247723396, 0.9997284900750438, 0.9997292305789264, 0.9997293624848168, 0.9997293873168583, 0.9997293932302354, 0.9997293947422077, 0.9997293951688055],       markersize=8, linestyle='dashed', color="#d95f02", marker='s', label="Neg. Uncorr. a=25")
+    plt.axvline(x=0, ymin=-0.1, ymax=0.5, ls=":", color="#d95f02")
+
+    plt.plot(bins,[0.0, 0.049238324333099825, 0.11573352412116424, 0.18656569901895656, 0.25582152838772304, 0.3231094793556211, 0.3881971511909206, 0.45075869046711536, 0.5107800612701512, 0.5678069750410702, 0.6216495935727392, 0.6718614658877777, 0.7188874512504674, 0.7625396385738955, 0.8031305293606457, 0.8405344884880864, 0.8745026231308054, 0.9049150986977835, 0.9308509233536751, 0.9521516667494878, 0.9687747398935174],    markersize=8, linestyle='dashed', color="#7570b3", marker='o', label="Neg. Corr. a=75")
+    plt.axvline(x=0, ymin=-0.1, ymax=0.5, ls=":", color="#7570b3")
+
+    plt.plot(bins, [0.0, 0.0, 6.9567971383577276e-15, -6.956797138357729e-16, 0.014698869512176712, 0.10737515653281497, 0.2105495297803971, 0.31856570368121806, 0.42511375107700117, 0.5249337037548526, 0.6152698786205715, 0.6943591736896279, 0.7626136464728188, 0.8198931384178352, 0.867100402305553, 0.9049330112543502, 0.9343161177857724, 0.9565109134653537, 0.9723442324899364, 0.9831964298979746, 0.9902771238326971],       markersize=8, linestyle='dashed', color="#7570b3", marker='s', label="Neg. Uncorr. a=75")
+    plt.axvline(x=3, ymin=-0.1, ymax=0.5, ls=":", color="#7570b3")
+
+
+    #plt.plot(bins, exp_data_corr,    marker='o', fillstyle='none', linestyle='none', color="#1b9e77", markeredgewidth=2, markersize=6, label='Exp.')
+    #plt.plot(bins, exp_data_uncorr,       marker='s', fillstyle='none', linestyle='none', color="#d95f02", markeredgewidth=2, markersize=6, label='Uncorr.')
     #plt.plot(bins, plot_neg_sf,       marker='^', fillstyle='none', linestyle='none', color="#7570b3", markeredgewidth=2, markersize=6, label='Negatively corr.')
 
-    pos_exp_data_corr = [0.0, 2.9100000000000003e-05, 3.85e-05, 5.33e-05, 8.060000000000001e-05, 0.0001319, 0.00027079999999999997, 0.0009773, 0.2395, 0.727171, 0.8661989999999999, 0.910981, 0.926985, 0.9333410000000001, 0.936174, 0.9375560000000001, 0.938246, 0.938607, 0.938789, 0.9388810000000001, 0.938932]
-    pos_exp_data_uncorr = [0.0, 3.0299999999999998e-05, 4.2999999999999995e-05, 7.14e-05, 0.00012880000000000001, 0.00032399999999999996, 0.0017981, 0.243753, 0.54951, 0.715322, 0.805996, 0.857694, 0.8881739999999999, 0.9068989999999999, 0.918547, 0.925991, 0.930833, 0.933863, 0.935812, 0.937038, 0.937806]
-    plt.plot(bins, pos_exp_data_corr,    marker='o', fillstyle='none', linestyle='none', color="#7570b3", markeredgewidth=2, markersize=6, label='Pos. Corr.')
-    plt.plot(bins, pos_exp_data_uncorr,       marker='s', fillstyle='none', linestyle='none', color="#e7298a", markeredgewidth=2, markersize=6, label='Pos. Uncorr.')
+    #pos_exp_data_corr = [0.0, 2.9100000000000003e-05, 3.85e-05, 5.33e-05, 8.060000000000001e-05, 0.0001319, 0.00027079999999999997, 0.0009773, 0.2395, 0.727171, 0.8661989999999999, 0.910981, 0.926985, 0.9333410000000001, 0.936174, 0.9375560000000001, 0.938246, 0.938607, 0.938789, 0.9388810000000001, 0.938932]
+    #pos_exp_data_uncorr = [0.0, 3.0299999999999998e-05, 4.2999999999999995e-05, 7.14e-05, 0.00012880000000000001, 0.00032399999999999996, 0.0017981, 0.243753, 0.54951, 0.715322, 0.805996, 0.857694, 0.8881739999999999, 0.9068989999999999, 0.918547, 0.925991, 0.930833, 0.933863, 0.935812, 0.937038, 0.937806]
+    #plt.plot(bins, pos_exp_data_corr,    marker='o', fillstyle='none', linestyle='none', color="#7570b3", markeredgewidth=2, markersize=6, label='Pos. Corr.')
+    #plt.plot(bins, pos_exp_data_uncorr,       marker='s', fillstyle='none', linestyle='none', color="#e7298a", markeredgewidth=2, markersize=6, label='Pos. Uncorr.')
     
     plt.rc('legend', fontsize=12)#, fontsize=12)
 
     plt.xlim((-0.5, len(bins)-0.5))
     plt.ylim((-0.1, 1.1))
-    plt.title("Corr. vs Uncorr. features edge percolation \n ER network k = 3; n=100K; runs=100")
-    plt.legend(loc='upper left', frameon=False)
+    plt.title("Corr. vs Uncorr. features edge percolation \n SF network a = 3; n=100K; runs=100")
+    plt.legend(loc='upper left', frameon=False, bbox_to_anchor=(1.0, 1))
     plt.xlabel("Maximum Feature F0")
     plt.ylabel("Size of giant cluster")
     plt.xticks(list(range(0, len(bins)+1, 2)))
     return plt
 
-def criticalpoint(bins, excdegdist, jointdist, upper_limit=10):
-    upper_limit = 10
-    G = np.zeros((upper_limit, upper_limit))
-    for i in range(upper_limit):
-        for j in range(upper_limit):
-            G[i, j] = (i)*excdegdist(i)*sum([jointdist(f, 50//((i+1)+(j+1))) for f in range(0, len(bins))])
-    eigenvalues, eigenvectors = eig(G)
-    print(eigenvalues.shape, eigenvectors.shape)
+def criticalpoint(bins, excdegdist, jointdist, upper_limit=50):
+    eig_vals = []
+    for F0 in range(len(bins)):
+        G = np.zeros((upper_limit, upper_limit))
+        for i in range(upper_limit):
+            for j in range(upper_limit):
+                G[i, j] = (i)*excdegdist(i)*sum([jointdist(f, int(75//((i+1)+(j+1)))) for f in range(0, F0)])
+        eigenvalues, eigenvectors = eig(G)
+        eig_vals.append(max(eigenvalues.real.tolist()))
+    
+    eig_vals = np.array(eig_vals)
+    eig_vals[eig_vals > 1] = 0
+    crit_val = np.argmax(eig_vals)
+    return crit_val
 
 def main():
     lower_limit = 0
-    upper_limit = 50
+    upper_limit = 10
     data_dir = "./results/raw/"
 
     #load configuration file
@@ -352,21 +368,22 @@ def main():
         joint_dist_list = next(csv.reader(file))
     jointdist = lambda k, m: float(joint_dist_list[21*m+k]) if m < 200 and k < 21 else print("mk", m, k)
 
-
-    #criticalpoint(bins, excdegdist, jointdist)
-
-    uncorr_joint_dist_list = [sum([sum([excdegdist(m-1)*excdegdist(k-1) * jointdist(f, 50//(m+k)) for m in range(1, upper_limit)]) for k in range(1, upper_limit)]) for f in range(21)]
+    uncorr_joint_dist_list = [sum([sum([excdegdist(m-1)*excdegdist(k-1) * jointdist(f, int(75//(m+k))) for m in range(1, upper_limit)]) for k in range(1, upper_limit)]) for f in range(21)]
     uncorr_jointdist = lambda k, m: uncorr_joint_dist_list[k]
+
+    crit_point_corr = criticalpoint(bins, excdegdist, jointdist, upper_limit)
+    crit_point_uncorr = criticalpoint(bins, excdegdist, uncorr_jointdist, upper_limit)
 
     corr_sol = computeAnalitycalSolution(degdist, excdegdist, jointdist, bins, lower_limit=0, upper_limit=upper_limit)
     uncorr_sol = computeAnalitycalSolution(degdist, excdegdist, uncorr_jointdist, bins, lower_limit=0, upper_limit=upper_limit)
-    print("corr sol", corr_sol)
-    print("corr exp", exp_data_corr)
-    print("uncorr sol", uncorr_sol)
-    print("uncorr exp", exp_data_uncorr)
+    print("corr sol", corr_sol, crit_point_corr)
+    #print("corr exp", exp_data_corr)
+    print("uncorr sol", uncorr_sol, crit_point_uncorr)
+    #print("uncorr exp", exp_data_uncorr)
 
-    plt = plot(exp_data_corr, corr_sol, exp_data_uncorr, uncorr_sol, bins)
-    plt.savefig("./results/figures/ER_corr_vs_uncorr.pdf")
+    plt = plot(exp_data_corr, corr_sol, exp_data_uncorr, uncorr_sol, crit_point_corr, crit_point_uncorr, bins)
+    #plt.tight_layout()
+    plt.savefig("./results/figures/SF_NEG.pdf", bbox_inches='tight')
 
 if __name__ == "__main__":
     main()
