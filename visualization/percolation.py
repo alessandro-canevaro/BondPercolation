@@ -229,7 +229,7 @@ class CorrelatedFeatureEdgePercolation(UncorrelatedFeatureEdgePercolation):
         return plt
     
 
-def computeAnalitycalSolution(degdist, excdegdist, joint_dist, bins, lower_limit=0, upper_limit=10):
+def computeAnalitycalSolution(degdist, excdegdist, joint_dist, bins, lower_limit=0, upper_limit=10, a=1):
 
     def pfkk(f, m):
         print(joint_dist(f, m), poisson.pmf(f, m))
@@ -240,7 +240,7 @@ def computeAnalitycalSolution(degdist, excdegdist, joint_dist, bins, lower_limit
 
     def psi(u, k, F0):
         #return sum([(1-u[m-1])* excdegdist(m-1) * gammaincc(F0, 50//(k+m)) for m in range(1, upper_limit)])
-        return sum([sum([excdegdist(m-1) * joint_dist(f, int(75//(m+k))) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
+        return sum([sum([excdegdist(m-1) * joint_dist(f, int(a*(m+k))) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
 
     def func(F0):
         def vecfunc(u):
@@ -319,7 +319,7 @@ def criticalpoint(bins, excdegdist, jointdist, upper_limit=50, a=1):
         G = np.zeros((upper_limit, upper_limit))
         for i in range(upper_limit):
             for j in range(upper_limit):
-                G[i, j] = (i)*excdegdist(i)*sum([jointdist(f, int(a//((i+1)+(j+1)))) for f in range(0, F0)])
+                G[i, j] = (i)*excdegdist(i)*sum([jointdist(f, int(a*((i+1)+(j+1)))) for f in range(0, F0)])
         eigenvalues, eigenvectors = eig(G)
         eig_vals.append(max(eigenvalues.real.tolist()))
     
@@ -337,12 +337,71 @@ def generate_distributions(a, lower_limit, upper_limit, feature_limit=21):
     
     jointdist = lambda k, m: poisson.pmf(k, m)
 
-    uncorr_joint_dist_list = [sum([sum([excdegdist(m-1)*excdegdist(k-1) * jointdist(f, int(a//(m+k))) for m in range(1, upper_limit)]) for k in range(1, upper_limit)]) for f in range(feature_limit)]
+    uncorr_joint_dist_list = [sum([sum([excdegdist(m-1)*excdegdist(k-1) * jointdist(f, int(a*(m+k))) for m in range(1, upper_limit)]) for k in range(1, upper_limit)]) for f in range(feature_limit)]
     uncorr_jointdist = lambda k, m: uncorr_joint_dist_list[k]
     
     return degdist, excdegdist, jointdist, uncorr_jointdist
 
-def metricsplot():
+def epsilon_metric():
+    a_list = [3]# np.arange(0, 155, 5)
+    #a_list = np.arange(0, 3, 1)
+
+    def func(a):
+        bins = np.arange(0, 31)
+        lower_limit = 0
+        upper_limit = 20
+        degdist, excdegdist, jointdist, uncorr_jointdist = generate_distributions(a, lower_limit, upper_limit, feature_limit=31)
+        
+        corr_data = computeAnalitycalSolution(degdist, excdegdist, jointdist, bins, lower_limit, upper_limit, a)
+        uncorr_data = computeAnalitycalSolution(degdist, excdegdist, uncorr_jointdist, bins, lower_limit, upper_limit, a)
+        print(corr_data, uncorr_data)
+
+        crit_point_corr = criticalpoint(bins, excdegdist, jointdist, upper_limit, a)
+        crit_point_uncorr = criticalpoint(bins, excdegdist, uncorr_jointdist, upper_limit, a)
+
+        crit_point_min = min(crit_point_corr, crit_point_uncorr)
+        s_diff_sum = np.sum(np.array(corr_data[crit_point_min:])-np.array(uncorr_data[crit_point_min:]))
+        print(a, crit_point_corr, crit_point_uncorr, s_diff_sum)
+        return a, s_diff_sum
+
+    """
+    sol_data = []
+    with tqdm(total=len(a_list)) as pbar:
+        #with mp.Pool(mp.cpu_count()) as pool:
+        for a in a_list:
+            sol_data.append(func(a))
+            pbar.update()
+    sol_data = sorted(sol_data, key=lambda x: x[0])
+    print(sol_data)
+    """
+
+    pos_data = [(0, 0.0), (0.5, -0.03415858822768275), (1, -0.3422681836206113), (1.5, -0.4878888857224688), (2, -0.8123369407319166), (2.5, -1.0026445186108425), (3, -1.1497365229028107)]
+    neg_data = [(0, 0.0), (25, 0.027785942337264558), (50, 0.16335445243700408), (75, 0.3232209637181103), (100, 0.6038037386873321), (125, 1.0221037603323224), (150, 1.5243232014921855)]
+
+    matplotlib.rcParams.update({'font.size': 18})
+    matplotlib.rc('xtick', labelsize=16) 
+    matplotlib.rc('ytick', labelsize=16) 
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax2 = ax1.twiny()
+    
+    lns1 = ax1.plot(*zip(*neg_data), marker="o", markeredgewidth=2, markersize=6, mfc='none', color="#1b9e77", label="neg. corr")
+    ax1.set_xlabel(r"neg. corr. coeff. a-")
+    lns2 = ax2.plot(*zip(*pos_data), marker="s", markeredgewidth=2, markersize=6, mfc='none', color="#d95f02", label="pos. corr")
+    #lns3 = ax2.plot(*zip(*sol_data), marker="x", markeredgewidth=2, markersize=6, mfc='none', label="sol data")
+    ax2.set_xlabel(r"pos. corr. coeff. a+")
+    ax1.set_ylabel(r"Epsilon")
+    ax1.yaxis.grid()
+    ax1.xaxis.grid()
+    # added these three lines
+    lns = lns1+lns2
+    labs = [l.get_label() for l in lns]
+    ax1.legend(lns, labs, loc="upper left")
+    plt.savefig("./results/figures/epsilon.pdf", bbox_inches='tight')
+
+
+def deltaF0():
 
     a_list = np.arange(0, 155, 5)
     #a_list = np.arange(0, 3.1, 0.1)
@@ -454,7 +513,7 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    metricsplot()
+    epsilon_metric()
 
     
     
