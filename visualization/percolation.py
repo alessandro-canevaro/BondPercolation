@@ -4,9 +4,9 @@ import csv
 import multiprocess as mp
 import numpy as np
 from math import asin, sin
-import matplotlib.pyplot as plt
 from matplotlib import rc
-import matplotlib.pylab as plt
+#import matplotlib.pylab as plt
+from matplotlib import pyplot as plt
 import matplotlib
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})#, 'size': 14
 rc('text', usetex=True)
@@ -313,13 +313,13 @@ def plot(exp_data_corr, corr_sol, exp_data_uncorr, uncorr_sol, crit_val_corr, cr
     plt.xticks(list(range(0, len(bins)+1, 2)))
     return plt
 
-def criticalpoint(bins, excdegdist, jointdist, upper_limit=50):
+def criticalpoint(bins, excdegdist, jointdist, upper_limit=50, a=1):
     eig_vals = []
     for F0 in range(len(bins)):
         G = np.zeros((upper_limit, upper_limit))
         for i in range(upper_limit):
             for j in range(upper_limit):
-                G[i, j] = (i)*excdegdist(i)*sum([jointdist(f, int(75//((i+1)+(j+1)))) for f in range(0, F0)])
+                G[i, j] = (i)*excdegdist(i)*sum([jointdist(f, int(a//((i+1)+(j+1)))) for f in range(0, F0)])
         eigenvalues, eigenvectors = eig(G)
         eig_vals.append(max(eigenvalues.real.tolist()))
     
@@ -327,6 +327,73 @@ def criticalpoint(bins, excdegdist, jointdist, upper_limit=50):
     eig_vals[eig_vals > 1] = 0
     crit_val = np.argmax(eig_vals)
     return crit_val
+
+def generate_distributions(a, lower_limit, upper_limit, feature_limit=21):
+    degdist = lambda k: binom.pmf(k, 100000, 0.00003)
+
+    degdistmean = sum([k*degdist(k) for k in range(lower_limit, upper_limit)])
+    def excdegdist(k):
+        return degdist(k+1)*(k+1)/degdistmean
+    
+    jointdist = lambda k, m: poisson.pmf(k, m)
+
+    uncorr_joint_dist_list = [sum([sum([excdegdist(m-1)*excdegdist(k-1) * jointdist(f, int(a//(m+k))) for m in range(1, upper_limit)]) for k in range(1, upper_limit)]) for f in range(feature_limit)]
+    uncorr_jointdist = lambda k, m: uncorr_joint_dist_list[k]
+    
+    return degdist, excdegdist, jointdist, uncorr_jointdist
+
+def metricsplot():
+
+    a_list = np.arange(0, 155, 5)
+    #a_list = np.arange(0, 3.1, 0.1)
+
+    def func(a):
+        bins = np.arange(0, 41)
+        lower_limit = 0
+        upper_limit = 20
+        degdist, excdegdist, jointdist, uncorr_jointdist = generate_distributions(a, lower_limit, upper_limit, feature_limit=41)
+        
+        crit_point_corr = criticalpoint(bins, excdegdist, jointdist, upper_limit, a)
+        crit_point_uncorr = criticalpoint(bins, excdegdist, uncorr_jointdist, upper_limit, a)
+        return a, crit_point_corr - crit_point_uncorr
+
+    
+    sol_data = []
+    with tqdm(total=len(a_list)) as pbar:
+        with mp.Pool(mp.cpu_count()) as pool:
+            for val in pool.imap_unordered(func, a_list):
+                sol_data.append(val)
+                pbar.update()
+    sol_data = sorted(sol_data, key=lambda x: x[0])
+    print(sol_data)
+    
+
+    
+    pos_data = [(0.0, 0), (0.1, 0), (0.2, 1), (0.30000000000000004, 0), (0.4, 0), (0.5, 0), (0.6000000000000001, 1), (0.7000000000000001, 0), (0.8, 1), (0.9, 1), (1.0, 1), (1.1, 1), (1.2000000000000002, 1), (1.3, 1), (1.4000000000000001, 2), (1.5, 2), (1.6, 1), (1.7000000000000002, 2), (1.8, 2), (1.9000000000000001, 2), (2.0, 2), (2.1, 2), (2.2, 2), (2.3000000000000003, 3), (2.4000000000000004, 3), (2.5, 2), (2.6, 3), (2.7, 3), (2.8000000000000003, 3), (2.9000000000000004, 3), (3.0, 3)]
+    neg_data = [(0, 0), (5, 0), (10, 0), (15, -1), (20, 0), (25, -1), (30, 0), (35, -1), (40, -2), (45, -1), (50, -2), (55, -1), (60, -2), (65, -1), (70, -2), (75, -2), (80, -2), (85, -3), (90, -2), (95, -2), (100, -2), (105, -3), (110, -3), (115, -3), (120, -4), (125, -4), (130, -4), (135, -4), (140, -4), (145, -4), (150, -4)]
+
+    matplotlib.rcParams.update({'font.size': 18})
+    matplotlib.rc('xtick', labelsize=16) 
+    matplotlib.rc('ytick', labelsize=16) 
+
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    ax2 = ax1.twiny()
+    
+    lns1 = ax1.plot(*zip(*neg_data), marker="o", markeredgewidth=2, markersize=6, mfc='none', color="#1b9e77", label="neg. corr")
+    ax1.set_xlabel(r"neg. corr. coeff. a-")
+    lns2 = ax2.plot(*zip(*pos_data), marker="s", markeredgewidth=2, markersize=6, mfc='none', color="#d95f02", label="pos. corr")
+    #lns3 = ax2.plot(*zip(*sol_data), marker="x", markeredgewidth=2, markersize=6, mfc='none', label="sol data")
+    ax2.set_xlabel(r"pos. corr. coeff. a+")
+    ax1.set_ylabel(r"Delta F0 Crit.")
+    ax1.yaxis.grid()
+    ax1.xaxis.grid()
+    # added these three lines
+    lns = lns1+lns2
+    labs = [l.get_label() for l in lns]
+    ax1.legend(lns, labs, loc="upper left")
+    plt.savefig("./results/figures/delta_F0.pdf", bbox_inches='tight')
+
 
 def main():
     lower_limit = 0
@@ -386,7 +453,8 @@ def main():
     plt.savefig("./results/figures/SF_NEG.pdf", bbox_inches='tight')
 
 if __name__ == "__main__":
-    main()
+    #main()
+    metricsplot()
 
     
     
