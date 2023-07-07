@@ -240,7 +240,8 @@ def computeAnalitycalSolution(degdist, excdegdist, joint_dist, bins, lower_limit
 
     def psi(u, k, F0):
         #return sum([(1-u[m-1])* excdegdist(m-1) * gammaincc(F0, 50//(k+m)) for m in range(1, upper_limit)])
-        return sum([sum([excdegdist(m-1) * joint_dist(f, int(a*(m+k))) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
+        return sum([sum([excdegdist(m-1) * joint_dist(f, m, k) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)])
+        return sum([sum([excdegdist(m-1) * joint_dist(f, int(a*(m+k))) * (1-u[m-1]) for m in range(1, upper_limit)]) for f in range(0, F0)]) #for the normal case
 
     def func(F0):
         def vecfunc(u):
@@ -453,6 +454,129 @@ def deltaF0():
     ax1.legend(lns, labs, loc="upper left")
     plt.savefig("./results/figures/delta_F0.pdf", bbox_inches='tight')
 
+def other_dist():
+    def generate_dist(a, lower_limit, upper_limit, feature_limit=21):
+        degdist = lambda k: binom.pmf(k, 100000, 0.00003)
+        #C = sum([ks**(-3) for ks in range(lower_limit, upper_limit) if ks>=2])
+        #degdist = lambda k: (k**(-3)/C) if k>=2 else 0
+
+        degdistmean = sum([k*degdist(k) for k in range(lower_limit, upper_limit)])
+        def excdegdist(k):
+            return degdist(k+1)*(k+1)/degdistmean
+        
+        #jointdist = lambda f, k, m: poisson.pmf(f, a*(m+k)) if m+k>0 else np.nan
+        #_jointdist = lambda f, k, m: a * (1+k+m)**a / (f+k+m)**(1+a) if f+m+k > 0 else 0
+        _jointdist = lambda f, k, m: a * (k+m)*(1+k+m)**a / (f*(k+m)+1)**(1+a)
+        
+        data = np.zeros((feature_limit, (upper_limit*2)+1))
+        for f in range(feature_limit):
+            for d in range((upper_limit*2)+1):
+                data[f, d] = _jointdist(f, d, 0)
+        norm = np.sum(data, axis=0)
+        jointdist = lambda f, k, m: _jointdist(f, k, m)/norm[m+k]
+
+        uncorr_joint_dist_list = [sum([sum([excdegdist(m-1)*excdegdist(k-1) * jointdist(f, k, m) for m in range(1, upper_limit)]) for k in range(1, upper_limit)]) for f in range(feature_limit)]
+        uncorr_jointdist = lambda f, k, m: uncorr_joint_dist_list[f]
+        
+        return degdist, excdegdist, jointdist, uncorr_jointdist
+    
+    def plot_jointdist(jointdist):
+        feat = 21
+        deg = 20
+        data = np.zeros((feat, deg))
+        for f in range(feat):
+            for d in range(deg):
+                data[f, d] = jointdist(f, d, 0)
+        norm = np.sum(data, axis=0)
+        #print(norm)
+        #for d in range(deg):
+        #    data[:, d] = data[:, d] / norm[d]
+        matplotlib.rcParams.update({'font.size': 18})
+        matplotlib.rc('xtick', labelsize=16) 
+        matplotlib.rc('ytick', labelsize=16) 
+        plt.imshow(data, cmap="inferno")
+        plt.colorbar()
+        plt.title("Conditional feature dist.")
+        plt.xlabel("Degree sum k+m")
+        plt.ylabel("Feature f")
+        plt.savefig("./results/figures/PMA_POS.pdf", bbox_inches='tight')
+        plt.clf()
+        plt.close()
+
+    
+    def criticalpoint(bins, excdegdist, jointdist, upper_limit=50, a=1):
+        eig_vals = []
+        for F0 in range(len(bins)):
+            G = np.zeros((upper_limit, upper_limit))
+            for i in range(upper_limit):
+                for j in range(upper_limit):
+                    G[i, j] = (i)*excdegdist(i)*sum([jointdist(f, (i+1), (j+1)) for f in range(0, F0)])
+            eigenvalues, eigenvectors = eig(G)
+            eig_vals.append(max(eigenvalues.real.tolist()))
+        
+        eig_vals = np.array(eig_vals)
+        eig_vals[eig_vals > 1] = 0
+        crit_val = np.argmax(eig_vals)
+        return crit_val
+
+
+    a_list = np.arange(0, 155, 5)
+    #a_list = np.arange(0, 3.1, 0.1)
+    a = 0.005
+
+    bins = np.arange(0, 21)
+    lower_limit = 0
+    upper_limit = 20
+    #upper_limit = 100#int(100000**0.5)+1
+
+    degdist, excdegdist, jointdist, uncorr_jointdist = generate_dist(a, lower_limit, upper_limit, feature_limit=21)
+    #plot_jointdist(jointdist)
+    
+    """
+    crit_point_corr = criticalpoint(bins, excdegdist, jointdist, upper_limit, a)
+    crit_point_uncorr = criticalpoint(bins, excdegdist, uncorr_jointdist, upper_limit, a)
+    print(crit_point_corr, crit_point_uncorr)
+    
+    corr_sol = computeAnalitycalSolution(degdist, excdegdist, jointdist, bins, lower_limit=0, upper_limit=upper_limit)
+    print("corr sol", corr_sol, crit_point_corr)
+    uncorr_sol = computeAnalitycalSolution(degdist, excdegdist, uncorr_jointdist, bins, lower_limit=0, upper_limit=upper_limit)
+    print("uncorr sol", uncorr_sol, crit_point_uncorr)
+    """
+
+    matplotlib.rcParams.update({'font.size': 18})
+    matplotlib.rc('xtick', labelsize=16) 
+    matplotlib.rc('ytick', labelsize=16) 
+    #plt.plot(bins,  corr_sol,    markersize=8, linestyle='dashed', color="k", marker='o', label="test. Corr. ")
+    #plt.plot(bins,  uncorr_sol,    markersize=8, linestyle='dashed', color="k", marker='s', label="test. UnCorr. ")
+    
+    plt.plot(bins,  [0.0, 0.936885836159678, 0.939354338435475, 0.9399106967188803, 0.9401314539896946, 0.9402441226126497, 0.9403104706043864, 0.9403533484512049, 0.9403829213462798, 0.9404043239729523, 0.9404203983165638, 0.9404332942333421, 0.9404431447154211, 0.940451105384514, 0.9404576473747955, 0.9404631004307346, 0.9404677036230079, 0.940471630342822, 0.9404750123120468, 0.9404779497374227, 0.9404805203173586],    markersize=8, linestyle='dashed', color="#1b9e77", marker='o', label="Corr. a=1.5")
+    plt.axvline(x=0, ymin=-0.1, ymax=0.5, ls=":", color="#1b9e77")
+
+    plt.plot(bins, [0.0, 0.9387359829463515, 0.9399602968633217, 0.9402217599663478, 0.9403235299671916, 0.940374954974941, 0.940405079980625, 0.9404244599775451, 0.9404377883085916, 0.9404474137044627, 0.9404546309891667, 0.9404602062025003, 0.9404646183973948, 0.9404681808690998, 0.9404711062151453, 0.9404740034616456, 0.9404760587241452, 0.9404778112601375, 0.9404793200024042, 0.9404806299134806, 0.9404817758321937],       markersize=8, linestyle='dashed', color="#1b9e77", marker='s', label="Uncorr. a=1.5")
+    plt.axvline(x=0, ymin=-0.1, ymax=0.5, ls=":", color="#1b9e77")
+
+    plt.plot(bins, [0.0, 0.7988671011511704, 0.8502016218152636, 0.87258921537731, 0.8861491400331288, 0.8955948331352072, 0.9027104024218099, 0.9083466863515226, 0.9129702260463111, 0.9168621426256958, 0.9202038009486527, 0.923118433948199, 0.9256932579979318, 0.9279920639369097, 0.9300627923894191, 0.9319423019703342, 0.933659485804641, 0.9352373745761483, 0.9366945951193147, 0.938046406408833, 0.9393054509047535],    markersize=8, linestyle='dashed', color="#d95f02", marker='o', label="Corr. a=0.005")
+    plt.axvline(x=0, ymin=-0.1, ymax=0.5, ls=":", color="#d95f02")
+
+    plt.plot(bins, [0.0, 0.8158703876459944, 0.8647978436642012, 0.8846674091977768, 0.8963057252202494, 0.9042489677246747, 0.9101495588303821, 0.9147757185919833, 0.918540880155902, 0.9216905654151604, 0.9243813215607465, 0.9267184858479786, 0.9287759956579749, 0.9306075461253743, 0.932253241148056, 0.93374374609053, 0.9351029827094883, 0.9363499361772223, 0.9374999012178373, 0.9385653626292367, 0.9395566308751289],       markersize=8, linestyle='dashed', color="#d95f02", marker='s', label="Uncorr. a=0.005")
+    plt.axvline(x=0, ymin=-0.1, ymax=0.5, ls=":", color="#d95f02")
+
+    #plt.plot(bins,[0.0, 0.46315606220610334, 0.8512875451702445, 0.9078282467798547, 0.9246638841613168, 0.9316257236397262, 0.9350756769521023, 0.9369877514631645, 0.9381308612218616, 0.9388528684260034, 0.939328495152825, 0.9396525015481045, 0.9398793900828932, 0.9400420018155137, 0.9401608904895888, 0.940249333387481, 0.9403161413730885, 0.9403672989994638, 0.940406954789432, 0.9404380368750833, 0.9404626461459237],    markersize=8, linestyle='dashed', color="#7570b3", marker='o', label="Corr. a=5")
+    #plt.axvline(x=0, ymin=-0.1, ymax=0.5, ls=":", color="#7570b3")
+
+    #plt.plot(bins, [0.0, 0.550606045655423, 0.8241182719588069, 0.8857831893578532, 0.9095919592074404, 0.9212392174334446, 0.9277446044447327, 0.9316981169506615, 0.9342457460109734, 0.9359600588221776, 0.9371529851503713, 0.93800579350738, 0.9386292173305624, 0.9390936502270971, 0.9394453237579654, 0.939715439227877, 0.9399255481307134, 0.9400908380786986, 0.9402222016606993, 0.940327574084523, 0.9404128322850048],       markersize=8, linestyle='dashed', color="#7570b3", marker='s', label="Uncorr. a=5")
+    #plt.axvline(x=0, ymin=-0.1, ymax=0.5, ls=":", color="#7570b3")
+ 
+    plt.rc('legend', fontsize=12)#, fontsize=12)
+
+    plt.xlim((-0.5, len(bins)-0.5))
+    plt.ylim((-0.1, 1.1))
+    plt.title("Negative Feature-Degree Correlation \nER network")
+    plt.legend(loc='lower right')#, frameon=False, bbox_to_anchor=(1.0, 1))
+    plt.xlabel("Maximum Feature F0")
+    plt.ylabel("Size of giant cluster")
+    plt.xticks(list(range(0, len(bins)+1, 2)))
+    plt.savefig("./results/figures/PLC_ER_NEG.pdf", bbox_inches='tight')
 
 def main():
     lower_limit = 0
@@ -513,7 +637,7 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    epsilon_metric()
+    other_dist()
 
     
     

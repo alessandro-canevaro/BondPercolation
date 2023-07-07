@@ -39,16 +39,6 @@
 
 #Folders
 build/
-data/results/
-data/TemporalData/
-data/btc_otc/
-data/btc_alpha/
-data/SFHH
-data/rural_malawi
-data/biogrid/processed/
-data/bitcoin/processed/
-data/other_datasets/processed/
-data
 bp_venv/
 
 preprocessing/__pycache__/
