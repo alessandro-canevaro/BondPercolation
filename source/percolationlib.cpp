@@ -89,6 +89,45 @@ vector<int> Percolation::FeatureEdgeRemoval(int mu, int max_feature){
 
 vector<int> Percolation::FeatureEdgeRemoval(vector<int> features, int max_feature){
     vector<vector<int>> order = edges;
+    int max_deg = 1000;
+
+    //----start
+    vector<double> joint_dist(max_feature*max_deg); //max_feat * f(k, j)
+
+    vector<int> feat;
+    int curr_feat;
+    int k1, k2, m;
+    for(int i=0; i<edges.size(); i++){
+        k1 = net[edges[i][0]].size();
+        k2 = net[edges[i][1]].size();
+        m = (k1+k2);
+        if (m >= max_deg){
+            m=max_deg-1;
+        }
+        curr_feat = features[i];
+        if (curr_feat >= 21){
+            curr_feat = 20;
+        }
+
+        feat.push_back(curr_feat);
+        joint_dist[curr_feat+21*(m)] += 1;
+    }
+
+    features = {feat};
+
+    //joint distribution
+    double sum;
+    for (int m=0; m<max_deg; m++){
+        sum = accumulate(joint_dist.begin()+21*m, joint_dist.begin()+21*(m+1), 0.0);
+        for(int k = 0; k < 21; k++){
+            if (joint_dist[21*m+k] > 0.0){
+                joint_dist[21*m+k] = joint_dist[21*m+k]/sum;
+            }
+        } 
+    }
+    
+    joint_distribution = joint_dist;
+    //----end
 
     vector<int> indices(order.size());
     iota(indices.begin(), indices.end(), 0);

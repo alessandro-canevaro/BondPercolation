@@ -343,8 +343,36 @@ void percolation(){
     cout << "data processing took: " << t3-t2 << " seconds" << endl;
 }
 
+void percolation_empirical(){
+    string path = "./data/bitcoin/bitcoin_otc_processed.txt";
+    vector<vector<int>> net_list = loadEdgeList(path);
+    vector<int> features = loadFeatureList(path);
+    
+    vector<int> raw;
+    vector<double> raw_deg_dist;
+    vector<double> raw_joint_dist;
+      
+    Network net = Network(net_list);
+    raw_deg_dist = net.getDegDist();
+    cout << "Net size: " << net.nodes << endl;
+     
+    Percolation perc = Percolation(net.getNetwork(), net.getEdgeList());
+    raw = perc.FeatureEdgeRemoval(features, 21);
+    raw_joint_dist = perc.getJointDistribution();
+    
+    vector<double> doubleRaw;
+    transform(raw.begin(), raw.end(), std::back_inserter(doubleRaw), [](int value) { return static_cast<double>(value); });
+    
+    saveResults("./results/raw/perc_result.csv", doubleRaw);
+    saveResults("./results/raw/perc_result_degdist.csv", raw_deg_dist);
+    saveResults("./results/raw/perc_result_jointdist.csv", raw_joint_dist);
+    
+}
+
+
 int main(){   
-    percolation();
+    percolation_empirical();
+    //percolation();
     //tmp_net_perc();
     cout << endl << "all done" << endl;
     return 0;

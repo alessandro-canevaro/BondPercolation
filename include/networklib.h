@@ -25,6 +25,8 @@ class Network{
 
         vector<vector<int>> getNetwork();
 
+        int nodes;
+
     protected:
 
         void matchStubs(vector<int> degree_sequence);
@@ -33,7 +35,7 @@ class Network{
 
         void makeEdgeList();
 
-        int nodes;
+        
         vector<vector<int>> network;
         vector<vector<int>> edge_list;
 };
