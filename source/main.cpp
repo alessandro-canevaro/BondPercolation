@@ -286,21 +286,20 @@ vector<int> loadFeatureList(string path){
 
 void tmp_net_perc(){
     string output_data_path = "./results/raw/percolation_result.csv";
-    string chunk_folder = "./data/biogrid/";
+    string chunk_folder = "./data/bitcoin/processed/";
     vector<int> row, result;
-    int files = 1;//5;
+    int files = 25;//1;//5;
     float dx = 0.1;
     int min_f = -100;
     int max_f = 100;
-    int max_feature = (int) 2*(max_f/dx)+1;
-    //vector<int> max_feature = {197-0+1, 203-14+1, -10+246+1, 1, 20-1+1, 1000+1+1};
+    int max_feature = 21;//(int) 2*(max_f/dx)+1;
 
     for(int i=0; i<files; i++){
-        string filename = chunk_folder+"chunck_"+to_string(i)+".txt";
+        string filename = chunk_folder+"chunk_"+to_string(i)+".txt";
         if(i < 10){
-            filename = chunk_folder+"chunck_0"+to_string(i)+".txt";
+            filename = chunk_folder+"chunk_0"+to_string(i)+".txt";
         }
-        filename = chunk_folder+"aggregation.txt";
+        //filename = chunk_folder+"aggregation.txt";
         cout << "Processing file: " << filename << endl;
         vector<vector<int>> edgelist = loadEdgeList(filename);
         vector<int> featlist = loadFeatureList(filename);
@@ -359,10 +358,10 @@ void percolation(){
             raw[i] = perc.UniformEdgeRemoval();
         }
         if(percolation_type=='f'){
-            raw[i] = perc.FeatureEdgeRemoval(8, 20);
+            raw[i] = perc.FeatureEdgeRemoval(8, 21);
         }
         if(percolation_type=='c'){
-            raw[i] = perc.CorrFeatureEdgeRemoval(20);
+            raw[i] = perc.CorrFeatureEdgeRemoval(21);
         }
         if(percolation_type=='t'){
             row.clear();
@@ -415,8 +414,8 @@ void percolation(){
 }
 
 int main(){   
-    //percolation();
-    tmp_net_perc();
+    percolation();
+    //tmp_net_perc();
     cout << endl << "all done" << endl;
     return 0;
 }
